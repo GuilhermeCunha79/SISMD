@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 
 public class WordCount {
-  static final int maxPages = 100000;
-  static final String fileName= "enwiki.xml";
+  static final int maxPages = 100;
+  static final String fileName= "path/to/en.wiki";
 
   private static final HashMap<String, Integer> counts =
           new HashMap<>();

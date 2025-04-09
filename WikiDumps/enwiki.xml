@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mediawiki.org/xml/export-0.10/ http://www.mediawiki.org/xml/export-0.10.xsd">
+  <page>
+    <title>Example</title>
+    <ns>0</ns>
+    <id>1</id>
+    <revision>
+      <id>1</id>
+      <timestamp>2025-04-01T12:00:00Z</timestamp>
+      <contributor>
+        <username>ExampleUser</username>
+        <id>1234</id>
+      </contributor>
+      <comment>Initial revision</comment>
+      <text xml:space="preserve">This is an example article on Wikipedia. The content of this page can be anything from text to images and links. It provides a basic overview of the type of content that Wikipedia articles typically contain. Wikipedia articles are open to edits and contributions from anyone with an internet connection, which allows the creation of a large, ever-growing resource of human knowledge on the web. People from all around the world contribute to the knowledge base, and the content of each page is continuously updated to reflect new information as it becomes available.</text>
+    </revision>
+  </page>
+  <page>
+    <title>AnotherExample</title>
+    <ns>0</ns>
+    <id>2</id>
+    <revision>
+      <id>2</id>
+      <timestamp>2025-04-01T13:00:00Z</timestamp>
+      <contributor>
+        <username>AnotherUser</username>
+        <id>5678</id>
+      </contributor>
+      <comment>Added new information</comment>
+      <text xml:space="preserve">This is another example article. The content varies and can be anything that fits the scope of the article. Articles can cover topics from history to technology, science, culture, and beyond. The content is regularly edited, expanded, and refined by a global community of volunteers, making it one of the most comprehensive online resources available. The collaborative nature of Wikipedia ensures that the information it provides is continuously updated and remains relevant to the needs of its readers.</text>
+    </revision>
+  </page>
+  <page>
+    <title>SampleArticle</title>
+    <ns>0</ns>
+    <id>3</id>
+    <revision>
+      <id>3</id>
+      <timestamp>2025-04-01T14:00:00Z</timestamp>
+      <contributor>
+        <username>SampleUser</username>
+        <id>91011</id>
+      </contributor>
+      <comment>Updated sections</comment>
+      <text xml:space="preserve">This is a sample article used to demonstrate the structure of a Wikipedia dump file. The article's content can be anything that fits the scope of the Wikipedia project. Some articles might be very detailed, while others might be quite short and concise. One of the key features of Wikipedia is the wide range of topics it covers, from simple facts about animals and geography to complex scientific theories and historical events. This structure allows users to explore vast amounts of information across a wide array of fields.</text>
+    </revision>
+  </page>
+  <page>
+    <title>LearningXML</title>
+    <ns>0</ns>
+    <id>4</id>
+    <revision>
+      <id>4</id>
+      <timestamp>2025-04-01T15:00:00Z</timestamp>
+      <contributor>
+        <username>XMLStudent</username>
+        <id>1213</id>
+      </contributor>
+      <comment>Created the article</comment>
+      <text xml:space="preserve">Learning XML is an essential part of working with structured data in many different software applications. XML, or Extensible Markup Language, allows users to store data in a format that is both human-readable and machine-readable. It is used extensively in web development, database management, and data exchange protocols. XML provides a flexible and robust framework for organizing data, making it a crucial tool in modern computing. Many applications use XML for configuration files, document storage, and data transmission between systems.</text>
+    </revision>
+  </page>
+</mediawiki>

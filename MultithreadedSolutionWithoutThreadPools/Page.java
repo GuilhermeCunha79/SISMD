@@ -1,4 +1,4 @@
-package SequentialSolution;
+package MultithreadedSolutionWithoutThreadPools;
 
 public class Page {
   private String title;

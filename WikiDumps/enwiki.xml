@@ -56,7 +56,7 @@
         <username>XMLStudent</username>
         <id>1213</id>
       </contributor>
-      <comment>Created the article</comment>
+      <comment>Created the article</<comment>
       <text xml:space="preserve">Learning XML is an essential part of working with structured data in many different software applications. XML, or Extensible Markup Language, allows users to store data in a format that is both human-readable and machine-readable. It is used extensively in web development, database management, and data exchange protocols. XML provides a flexible and robust framework for organizing data, making it a crucial tool in modern computing. Many applications use XML for configuration files, document storage, and data transmission between systems.</text>
     </revision>
   </page>

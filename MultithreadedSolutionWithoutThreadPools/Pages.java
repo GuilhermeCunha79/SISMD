@@ -1,10 +1,10 @@
-package SequentialSolution;
+package MultithreadedSolutionWithoutThreadPools;
 
-import java.io.FileInputStream;
-import java.util.Iterator;
-import javax.xml.stream.events.XMLEvent;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.events.XMLEvent;
+import java.io.FileInputStream;
+import java.util.Iterator;
 
 public class Pages implements Iterable<Page> {
 

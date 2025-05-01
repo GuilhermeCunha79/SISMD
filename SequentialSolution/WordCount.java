@@ -1,12 +1,13 @@
-import java.util.stream.Collectors;
+package SequentialSolution;
+
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.LinkedHashMap;
 
 public class WordCount {
-  static final int maxPages = 100;
-  static final String fileName= "path/to/en.wiki";
+  static final int maxPages = 100000;
+  static final String fileName= "C:\\Users\\Guilherme Cunha\\IdeaProjects\\sismd-project1\\WikiDumps\\large_wiki_file.xml";
 
   private static final HashMap<String, Integer> counts =
           new HashMap<>();
@@ -23,7 +24,7 @@ public class WordCount {
       for (String word: words)
         if(word.length()>1 || word.equals("a") || word.equals("I"))
           countWord(word);
-      ++processedPages;    
+      ++processedPages;
     }
     long end = System.currentTimeMillis();
     System.out.println("Processed pages: " + processedPages);

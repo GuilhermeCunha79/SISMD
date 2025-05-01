@@ -1,4 +1,4 @@
-package SequentialSolution;
+package MultithreadedSolutionWithoutThreadPools;
 
 import java.text.BreakIterator;
 import java.util.Iterator;

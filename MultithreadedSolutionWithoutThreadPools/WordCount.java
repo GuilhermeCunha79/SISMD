@@ -3,70 +3,81 @@ package MultithreadedSolutionWithoutThreadPools;
 import java.util.*;
 
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class WordCount {
-  static final int maxPages = 100000;
-  static final String fileName = "C:\\Users\\Guilherme Cunha\\IdeaProjects\\sismd-project1\\WikiDumps\\large_wiki_file.xml";
-  private static final ConcurrentHashMap<String, Integer> counts = new ConcurrentHashMap<>();
+  private static final int MAX_PAGES = 100000;
+  private static final String FILE_NAME = "WikiDumps/large_wiki_file.xml";
+  //Uso de ConcurrentHashMap e AtomicInteger para garantir que os dados sao atualizados forma tomica e sem problemas de concorrencia
+  private static final ConcurrentHashMap<String, AtomicInteger> counts = new ConcurrentHashMap<>();
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws InterruptedException {
     long start = System.currentTimeMillis();
 
-    Iterable<Page> pageIterable = new Pages(maxPages, fileName);
+    //Carrega as páginas
+    Iterable<Page> pages = new Pages(MAX_PAGES, FILE_NAME);
     List<Page> allPages = new ArrayList<>();
-    pageIterable.forEach(allPages::add);
+    for (Page p : pages) {
+      if (p != null) allPages.add(p);
+    }
 
-    int numThreads = Math.min(Runtime.getRuntime().availableProcessors(), Math.max(1, maxPages / 10));
+    //Divide páginas em partes para processar em paralelo
+    int numThreads = Math.min(Runtime.getRuntime().availableProcessors(), allPages.size());
     List<List<Page>> pageChunks = splitPages(allPages, numThreads);
-    List<Thread> threads = new ArrayList<>();
 
+    //Processa páginas em paralelo
+    List<Thread> threads = new ArrayList<>();
     for (List<Page> chunk : pageChunks) {
       Thread thread = new Thread(() -> processPages(chunk));
       threads.add(thread);
       thread.start();
     }
 
+    //Espera todas as threads terminarem
     for (Thread thread : threads) {
       thread.join();
     }
 
     long end = System.currentTimeMillis();
+    System.out.println("Processed pages: " + allPages.size());
     System.out.println("Elapsed time: " + (end - start) + "ms");
 
     counts.entrySet().stream()
-            .sorted(Map.Entry.<String, Integer>comparingByValue(Comparator.reverseOrder()))
+            .sorted((entry1, entry2) -> Integer.compare(entry2.getValue().get(), entry1.getValue().get()))
             .limit(3)
-            .forEach(entry ->
-                    System.out.println("Word: '" + entry.getKey() + "' with total " + entry.getValue() + " occurrences!")
-            );
+            .forEach(entry -> System.out.println("Word: '" + entry.getKey() + "' with total " + entry.getValue() + " occurrences!"));
   }
 
+  //Divide as páginas em partes para processar em paralelo
   private static List<List<Page>> splitPages(List<Page> allPages, int numChunks) {
+    int chunkSize = (int) Math.ceil(allPages.size() / (double) numChunks);
     List<List<Page>> chunks = new ArrayList<>();
-    int total = allPages.size();
-    int chunkSize = (int) Math.ceil(total / (double) numChunks);
-
-    for (int i = 0; i < total; i += chunkSize) {
-      int end = Math.min(i + chunkSize, total);
-      chunks.add(allPages.subList(i, end));
+    for (int i = 0; i < allPages.size(); i += chunkSize) {
+      chunks.add(allPages.subList(i, Math.min(i + chunkSize, allPages.size())));
     }
     return chunks;
   }
 
+  //Processa as páginas e conta as palavras
   private static void processPages(List<Page> pages) {
     for (Page page : pages) {
-      if (page == null) continue;
-      Iterable<String> words = new Words(page.getText());
-      for (String word : words) {
-        if (word.length() > 1 || word.equals("a") || word.equals("I")) {
-          countWord(word);
+      if (page != null) {
+        for (String word : new Words(page.getText())) {
+          if (isValidWord(word)) {
+            countWord(word);
+          }
         }
       }
     }
   }
 
+  //Verifica se a palavra é válida para contar
+  private static boolean isValidWord(String word) {
+    return word.length() > 1 || word.equals("a") || word.equals("I");
+  }
+
+  //Conta a palavra, atualizando de forma atómica a variavel counts
   private static void countWord(String word) {
-    counts.merge(word, 1, Integer::sum);
+    counts.computeIfAbsent(word, k -> new AtomicInteger(0)).incrementAndGet();
   }
 }

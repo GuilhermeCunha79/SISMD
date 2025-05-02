@@ -1,10 +1,10 @@
 package MultithreadedSolutionWithoutThreadPools;
 
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.events.XMLEvent;
 import java.io.FileInputStream;
 import java.util.Iterator;
+import javax.xml.stream.events.XMLEvent;
+import javax.xml.stream.XMLEventReader;
+import javax.xml.stream.XMLInputFactory;
 
 public class Pages implements Iterable<Page> {
 
@@ -27,8 +27,8 @@ public class Pages implements Iterable<Page> {
       reader = XMLInputFactory.newInstance().createXMLEventReader(new FileInputStream(fileName));
     }
 
-    public boolean hasNext() { 
-      return remainingPages > 0; 
+    public boolean hasNext() {
+      return remainingPages > 0;
     }
 
     public Page next() {
@@ -46,7 +46,7 @@ public class Pages implements Iterable<Page> {
                   String name = event.asStartElement().getName().getLocalPart();
                   if (name.equals("title"))
                     title = reader.getElementText();
-                  else if (name.equals("text")) 
+                  else if (name.equals("text"))
                     text = reader.getElementText();
                 } else if (event.isEndElement()) {
                   if (event.asEndElement().getName().getLocalPart().equals("page")) {

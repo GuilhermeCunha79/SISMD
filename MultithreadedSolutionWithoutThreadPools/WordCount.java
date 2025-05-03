@@ -50,10 +50,17 @@ public class WordCount {
 
   //Divide as páginas em partes para processar em paralelo
   private static List<List<Page>> splitPages(List<Page> allPages, int numChunks) {
-    int chunkSize = (int) Math.ceil(allPages.size() / (double) numChunks);
     List<List<Page>> chunks = new ArrayList<>();
-    for (int i = 0; i < allPages.size(); i += chunkSize) {
-      chunks.add(allPages.subList(i, Math.min(i + chunkSize, allPages.size())));
+    int totalPages = allPages.size();
+    int baseSize = totalPages / numChunks;
+    int remainder = totalPages % numChunks;
+
+    int start = 0;
+    for (int i = 0; i < numChunks; i++) {
+      int extra = (i < remainder) ? 1 : 0;
+      int end = start + baseSize + extra;
+      chunks.add(allPages.subList(start, end));
+      start = end;
     }
     return chunks;
   }

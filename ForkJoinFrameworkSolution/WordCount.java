@@ -2,135 +2,81 @@ package ForkJoinFrameworkSolution;
 
 import java.util.*;
 import java.util.concurrent.*;
-import javax.xml.parsers.*;
-import org.w3c.dom.*;
-import java.io.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class WordCount {
-    static final String fileName = "C:\\Users\\Guilherme Cunha\\IdeaProjects\\sismd-project1\\WikiDumps\\large_wiki_file.xml";
-    private static final HashMap<String, Integer> counts = new HashMap<>();
+    private static final int MAX_PAGES = 100000;
+    private static final String FILE_NAME = "WikiDumps/enwiki.xml";
+    private static final ConcurrentHashMap<String, AtomicInteger> counts = new ConcurrentHashMap<>();
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         long start = System.currentTimeMillis();
 
-        // 1. Criar o ForkJoinPool
-        ForkJoinPool pool = new ForkJoinPool();
+        Iterable<Page> pages = new Pages(MAX_PAGES, FILE_NAME);
+        List<Page> allPages = new ArrayList<>();
+        for (Page p : pages) {
+            if (p != null) allPages.add(p);
+        }
 
-        // 2. Submeter a tarefa principal para o pool
-        WordCountTask task = new WordCountTask(fileName);
-        Map<String, Integer> result = pool.invoke(task);
+        int cores = Runtime.getRuntime().availableProcessors();
+        int threshold = Math.max(10, allPages.size() / (cores * 4)); // Garante no mínimo 10
+        System.out.println(threshold);
+
+        // Inicia o pool e tarefa
+        try (ForkJoinPool pool = new ForkJoinPool()) {
+            pool.invoke(new WordCountTask(allPages, 0, allPages.size(), threshold));
+        }
 
         long end = System.currentTimeMillis();
+        System.out.println("Processed pages: " + allPages.size());
         System.out.println("Elapsed time: " + (end - start) + "ms");
 
-        // 3. Exibe as palavras mais comuns
-        result.entrySet().stream()
-                .sorted(Map.Entry.<String, Integer>comparingByValue(Comparator.reverseOrder()))
+        counts.entrySet().stream()
+                .sorted((e1, e2) -> Integer.compare(e2.getValue().get(), e1.getValue().get()))
                 .limit(3)
-                .forEach(entry -> System.out.println("Word: '" + entry.getKey() + "' with total " + entry.getValue() + " occurrences!"));
+                .forEach(e -> System.out.println("Word: '" + e.getKey() + "' with total " + e.getValue() + " occurrences!"));
     }
 
-    // Tarefa Fork/Join que faz o processamento das páginas
-    public static class WordCountTask extends RecursiveTask<Map<String, Integer>> {
-        static final int THRESHOLD = 10; // Tamanho mínimo de páginas para divisão
+    static class WordCountTask extends RecursiveAction {
+        private final List<Page> pages;
+        private final int start, end;
+        private final int threshold;
 
-        private String fileName;
-
-        public WordCountTask(String fileName) {
-            this.fileName = fileName;
+        WordCountTask(List<Page> pages, int start, int end, int threshold) {
+            this.pages = pages;
+            this.start = start;
+            this.end = end;
+            this.threshold = threshold;
         }
 
         @Override
-        protected Map<String, Integer> compute() {
-            List<Page> pages = readPagesFromFile(fileName);
-            if (pages.size() <= THRESHOLD) {
-                // Se o tamanho for pequeno o suficiente, processa sequencialmente
-                return processPages(pages);
-            } else {
-                // Divide a lista de páginas em duas tarefas
-                int mid = pages.size() / 2;
-                WordCountTask leftTask = new WordCountTask(fileName);
-                WordCountTask rightTask = new WordCountTask(fileName);
-
-                // Fork (cria as tarefas)
-                leftTask.fork();
-                rightTask.fork();
-
-                // Junta os resultados (join)
-                Map<String, Integer> leftResult = leftTask.join();
-                Map<String, Integer> rightResult = rightTask.join();
-
-                // Combina os resultados
-                return mergeResults(leftResult, rightResult);
-            }
-        }
-
-        // Processa uma lista de páginas e conta as palavras
-        private Map<String, Integer> processPages(List<Page> pages) {
-            Map<String, Integer> wordCounts = new HashMap<>();
-            for (Page page : pages) {
-                String[] words = page.getContent().split("\\s+");
-                for (String word : words) {
-                    wordCounts.put(word, wordCounts.getOrDefault(word, 0) + 1);
-                }
-            }
-            return wordCounts;
-        }
-
-        // Combina os resultados de duas tarefas
-        private Map<String, Integer> mergeResults(Map<String, Integer> left, Map<String, Integer> right) {
-            Map<String, Integer> merged = new HashMap<>(left);
-            for (Map.Entry<String, Integer> entry : right.entrySet()) {
-                merged.merge(entry.getKey(), entry.getValue(), Integer::sum);
-            }
-            return merged;
-        }
-
-        // Função para ler as páginas do arquivo XML
-        private List<Page> readPagesFromFile(String fileName) {
-            List<Page> pages = new ArrayList<>();
-            try {
-                File inputFile = new File(fileName);
-                DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-                Document doc = dBuilder.parse(inputFile);
-
-                doc.getDocumentElement().normalize();
-
-                NodeList pageList = doc.getElementsByTagName("page");
-                for (int i = 0; i < pageList.getLength(); i++) {
-                    Node pageNode = pageList.item(i);
-                    if (pageNode.getNodeType() == Node.ELEMENT_NODE) {
-                        Element pageElement = (Element) pageNode;
-                        String title = pageElement.getElementsByTagName("title").item(0).getTextContent();
-                        String content = pageElement.getElementsByTagName("revision").item(0)
-                                .getChildNodes().item(1).getTextContent();  // Aqui, você extrai o conteúdo da página
-                        pages.add(new Page(title, content));
+        protected void compute() {
+            int length = end - start;
+            if (length <= threshold) {
+                for (int i = start; i < end; i++) {
+                    Page page = pages.get(i);
+                    if (page != null) {
+                        for (String word : new Words(page.getText())) {
+                            if (isValidWord(word)) {
+                                countWord(word);
+                            }
+                        }
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } else {
+                int mid = start + length / 2;
+                WordCountTask left = new WordCountTask(pages, start, mid, threshold);
+                WordCountTask right = new WordCountTask(pages, mid, end, threshold);
+                invokeAll(left, right);
             }
-            return pages;
         }
     }
 
-    // Classe que representa uma página com seu título e conteúdo
-    static class Page {
-        private String title;
-        private String content;
+    private static boolean isValidWord(String word) {
+        return word.length() > 1 || word.equals("a") || word.equals("I");
+    }
 
-        public Page(String title, String content) {
-            this.title = title;
-            this.content = content;
-        }
-
-        public String getContent() {
-            return content;
-        }
-
-        public String getTitle() {
-            return title;
-        }
+    private static void countWord(String word) {
+        counts.computeIfAbsent(word, k -> new AtomicInteger(0)).incrementAndGet();
     }
 }

@@ -3,14 +3,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.LinkedHashMap;
 
-public class WordCount {
-  static final int maxPages = 100000;
-  static final String fileName = "WikiDumps/large_wiki_file.xml";
+public class SequentialSolution {
 
   private static final HashMap<String, Integer> counts =
           new HashMap<>();
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args, int maxPages, String fileName) throws Exception {
 
     long start = System.currentTimeMillis();
     Iterable<Page> pages = new Pages(maxPages, fileName);

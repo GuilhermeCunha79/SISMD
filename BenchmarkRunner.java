@@ -1,9 +1,9 @@
 import java.lang.management.*;
 import java.util.List;
 
-import MultithreadedSolutionWithThreadPools.MultithreadedSolutionWithThreadPools;
-
 public class BenchmarkRunner {
+    // This benchmark runner was developed to run every implementation to solve the problem.
+    // It will give the necessary inputs ( max number of pages, and input file ) and benchmark the execution.
 
     public static void main(String[] args) throws Exception {
         System.out.println("Benchmarking begins...\n");
@@ -21,6 +21,10 @@ public class BenchmarkRunner {
         long cpuBefore = System.nanoTime();
         long memBefore = runtime.totalMemory() - runtime.freeMemory();
         long wallClockBefore = System.nanoTime();
+
+        /* 
+        Place here any of the classes to benchmark, assure that the arguments stay the same throughout every class.
+        */
 
         //SequentialSolution.main(args,100000,"WikiDumps/large_wiki_file.xml");
         //MultithreadedSolutionWithThreadPools.main(args,100000,"WikiDumps/large_wiki_file.xml");

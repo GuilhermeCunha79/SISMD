@@ -42,6 +42,7 @@ public class MultithreadedSolutionWithThreadPools {
     commonWords.forEach((word, count) -> System.out.println("Word: '" + word + "' with total " + count + " occurrences!"));
   }
 
+  // Use the same processPage logic but with ConcurrentHashMap<String, AtomicInteger>.
   private static void processPage(Page page) {
     Iterable<String> words = new Words(page.getText());
     for (String word : words) {

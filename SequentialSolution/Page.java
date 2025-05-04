@@ -1,4 +1,3 @@
-package SequentialSolution;
 
 public class Page {
   private String title;

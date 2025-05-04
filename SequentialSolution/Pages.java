@@ -1,5 +1,3 @@
-package SequentialSolution;
-
 import java.io.FileInputStream;
 import java.util.Iterator;
 import javax.xml.stream.events.XMLEvent;

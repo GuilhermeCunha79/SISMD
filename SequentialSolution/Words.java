@@ -1,5 +1,3 @@
-package SequentialSolution;
-
 import java.text.BreakIterator;
 import java.util.Iterator;
 

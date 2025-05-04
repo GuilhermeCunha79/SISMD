@@ -22,10 +22,13 @@ public class ForkJoinFrameworkSolution {
         System.out.println("Usando " + threadNumber + " threads");
         System.out.println("Threshold: " + threshold);
 
-        // Usa corretamente o número de threads desejado
-        try (ForkJoinPool pool = new ForkJoinPool(threadNumber)) {
+        ForkJoinPool pool = new ForkJoinPool(threadNumber);
+        try {
             pool.invoke(new WordCountTask(allPages, 0, allPages.size(), threshold));
+        } finally {
+            pool.shutdown();
         }
+
 
         long end = System.currentTimeMillis();
         System.out.println("Processed pages: " + allPages.size());

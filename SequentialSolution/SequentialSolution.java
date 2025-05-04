@@ -10,9 +10,7 @@ public class SequentialSolution {
 
   public static void main(String[] args, int maxPages, String fileName) throws Exception {
 
-    long start = System.currentTimeMillis();
     Iterable<Page> pages = new Pages(maxPages, fileName);
-    int processedPages = 0;
     for(Page page: pages) {
       if(page == null)
         break;
@@ -20,11 +18,7 @@ public class SequentialSolution {
       for (String word: words)
         if(word.length()>1 || word.equals("a") || word.equals("I"))
           countWord(word);
-      ++processedPages;
     }
-    long end = System.currentTimeMillis();
-    System.out.println("Processed pages: " + processedPages);
-    System.out.println("Elapsed time: " + (end - start) + "ms");
 
     LinkedHashMap<String, Integer> commonWords = new LinkedHashMap<>();
     counts.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())) .forEachOrdered(x -> commonWords.put(x.getKey(), x.getValue()));

@@ -1,6 +1,8 @@
 import java.lang.management.*;
 import java.util.List;
 
+import MultithreadedSolutionWithThreadPools.MultithreadedSolutionWithThreadPools;
+
 public class BenchmarkRunner {
 
     public static void main(String[] args) throws Exception {
@@ -20,7 +22,8 @@ public class BenchmarkRunner {
         long memBefore = runtime.totalMemory() - runtime.freeMemory();
         long wallClockBefore = System.nanoTime();
 
-        SequentialSolution.main(args,100000,"WikiDumps/large_wiki_file.xml");
+        //SequentialSolution.main(args,100000,"WikiDumps/large_wiki_file.xml");
+        //MultithreadedSolutionWithThreadPools.main(args,100000,"WikiDumps/large_wiki_file.xml");
 
         long wallClockAfter = System.nanoTime();
         long cpuAfter = System.nanoTime(); 

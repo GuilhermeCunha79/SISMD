@@ -1,29 +1,27 @@
 package MultithreadedSolutionWithoutThreadPools;
 
 import java.util.*;
-
+import SharedUtilities.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class WordCount {
-  private static final int MAX_PAGES = 100000;
-  private static final String FILE_NAME = "WikiDumps/large_wiki_file.xml";
+public class MultithreadedSolutionWithoutThreadPools {
   //Uso de ConcurrentHashMap e AtomicInteger para garantir que os dados sao atualizados forma tomica e sem problemas de concorrencia
   private static final ConcurrentHashMap<String, AtomicInteger> counts = new ConcurrentHashMap<>();
 
-  public static void main(String[] args) throws InterruptedException {
+  public static void main(String[] args, int maxPages, String fileName, int threadNumber) throws InterruptedException {
     long start = System.currentTimeMillis();
 
     //Carrega as páginas
-    Iterable<Page> pages = new Pages(MAX_PAGES, FILE_NAME);
+    Iterable<Page> pages = new Pages(maxPages, fileName);
     List<Page> allPages = new ArrayList<>();
     for (Page p : pages) {
       if (p != null) allPages.add(p);
     }
 
     //Divide páginas em partes para processar em paralelo
-    int numThreads = Math.min(Runtime.getRuntime().availableProcessors(), allPages.size());
-    List<List<Page>> pageChunks = splitPages(allPages, numThreads);
+    //int numThreads = Math.min(Runtime.getRuntime().availableProcessors(), allPages.size());
+    List<List<Page>> pageChunks = splitPages(allPages, threadNumber);
 
     //Processa páginas em paralelo
     List<Thread> threads = new ArrayList<>();

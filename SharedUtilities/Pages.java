@@ -1,8 +1,9 @@
-package ForkJoinFrameworkSolution;
+package SharedUtilities;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.events.XMLEvent;
+
 import java.io.FileInputStream;
 import java.util.Iterator;
 

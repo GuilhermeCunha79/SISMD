@@ -4,22 +4,22 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class WordCount {
-    private static final int MAX_PAGES = 100000;
-    private static final String FILE_NAME = "WikiDumps/enwiki.xml";
+import SharedUtilities.*;
+
+public class ForkJoinFrameworkSolution {
     private static final ConcurrentHashMap<String, AtomicInteger> counts = new ConcurrentHashMap<>();
 
-    public static void main(String[] args) {
+    public static void main(String[] args, int maxPages, String fileName, int threadNumber) {
         long start = System.currentTimeMillis();
 
-        Iterable<Page> pages = new Pages(MAX_PAGES, FILE_NAME);
+        Iterable<Page> pages = new Pages(maxPages, fileName);
         List<Page> allPages = new ArrayList<>();
         for (Page p : pages) {
             if (p != null) allPages.add(p);
         }
 
-        int cores = Runtime.getRuntime().availableProcessors();
-        int threshold = Math.max(10, allPages.size() / (cores * 4)); // Garante no mínimo 10
+        //int cores = Runtime.getRuntime().availableProcessors(); TODO
+        int threshold = Math.max(10, allPages.size() / (threadNumber * 4)); // Garante no mínimo 10
         System.out.println(threshold);
 
         // Inicia o pool e tarefa

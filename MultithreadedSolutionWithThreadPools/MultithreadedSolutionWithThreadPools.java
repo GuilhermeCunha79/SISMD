@@ -4,17 +4,17 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 import java.util.stream.Collectors;
+import SharedUtilities.*;
 
 public class MultithreadedSolutionWithThreadPools {
 
   private static final ConcurrentHashMap<String, AtomicInteger> counts = new ConcurrentHashMap<>(); //  ThreadPool
   // Using AtomicInteger to make a thread-safe counter.
-  private static final int numThreads = Runtime.getRuntime().availableProcessors(); // get number of cores available
 
-  public static void main(String[] args, int maxPages, String fileName) throws Exception {
+  public static void main(String[] args, int maxPages, String fileName, int threadNumber) throws Exception {
     long start = System.currentTimeMillis();
 
-    ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+    ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
     Iterable<Page> pages = new Pages(maxPages, fileName);
 
     for (Page page : pages) {

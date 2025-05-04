@@ -1,4 +1,4 @@
-package MultithreadedSolutionWithoutThreadPools;
+package SharedUtilities;
 
 public class Page {
   private String title;

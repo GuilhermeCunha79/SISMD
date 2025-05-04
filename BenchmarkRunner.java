@@ -1,18 +1,40 @@
 import java.lang.management.*;
 import java.util.List;
+import java.util.Scanner;
 
+import ForkJoinFrameworkSolution.ForkJoinFrameworkSolution;
 import MultithreadedSolutionWithThreadPools.MultithreadedSolutionWithThreadPools;
+import MultithreadedSolutionWithoutThreadPools.MultithreadedSolutionWithoutThreadPools;
 
 public class BenchmarkRunner {
     // This benchmark runner was developed to run every implementation to solve the problem.
     // It will give the necessary inputs ( max number of pages, and input file ) and benchmark the execution.
 
-    private static String fileName = "WikiDumps/large_wiki_file.xml";
-
-    private static int maxPages = 100000;
-
     public static void main(String[] args) throws Exception {
-        System.out.println("Benchmarking begins...\n");
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Choose an implementation to benchmark:");
+        System.out.println("1 - Sequential Solution");
+        System.out.println("2 - Multithreaded with Thread Pools");
+        System.out.println("3 - ForkJoin Framework");
+        System.out.println("4 - Multithreaded without Thread Pools");
+        System.out.print("Enter choice (1-4): ");
+        int choice = scanner.nextInt();
+        scanner.nextLine();
+
+        System.out.print("Enter maxPages (e.g, 100000 ): ");
+        int maxPages = scanner.nextInt();
+        scanner.nextLine();
+
+        System.out.print("Enter file name (e.g., large_wiki_file.xml): ");
+        String fileName = "WikiDumps/";
+        fileName += scanner.nextLine();
+
+        System.out.print("Enter number of threads (if applicable): ");
+        int threadNumber = scanner.nextInt();
+        scanner.nextLine();
+
+        System.out.println("\nBenchmarking begins...\n");
 
         Runtime runtime = Runtime.getRuntime();
         List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
@@ -32,8 +54,16 @@ public class BenchmarkRunner {
         Place here any of the classes to benchmark, assure that the arguments stay the same throughout every class.
         */
 
-        //SequentialSolution.main(args,maxPages,fileName);
-        //MultithreadedSolutionWithThreadPools.main(args,maxPages,fileName);
+        switch (choice) {
+            case 1 -> SequentialSolution.main(args, maxPages, fileName);
+            case 2 -> MultithreadedSolutionWithThreadPools.main(args, maxPages, fileName, threadNumber);
+            case 3 -> ForkJoinFrameworkSolution.main(args, maxPages, fileName, threadNumber);
+            case 4 -> MultithreadedSolutionWithoutThreadPools.main(args, maxPages, fileName, threadNumber);
+            default -> {
+                System.out.println("Invalid option.");
+                return;
+            }
+        }
 
         long wallClockAfter = System.nanoTime();
         long cpuAfter = System.nanoTime(); 
@@ -53,5 +83,7 @@ public class BenchmarkRunner {
         System.out.println("Memory used: " + (memAfter - memBefore) / (1024 * 1024) + " MB"); // RAM used during execution.
         System.out.println("Garbage Collector collections: " + (gcCountAfter - gcCountBefore)); // Amount of GC collections.
         System.out.println("Garbage Collector time: " + (gcTimeAfter - gcTimeBefore) + " ms"); // Time GC spent collecting memory.
+
+        scanner.close();
     }
 }

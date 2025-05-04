@@ -42,10 +42,10 @@ public class BenchmarkRunner {
 
         // Print benchmark results
         System.out.println("\n====== Benchmark Results ======");
-        System.out.println("Wall-clock time: " + (wallClockAfter - wallClockBefore)/1_000_000 + " ms");
-        System.out.println("Approx. CPU time: " + (cpuAfter - cpuBefore)/1_000_000 + " ms");
-        System.out.println("Memory used: " + (memAfter - memBefore) / (1024 * 1024) + " MB");
-        System.out.println("Garbage Collector collections: " + (gcCountAfter - gcCountBefore));
-        System.out.println("Garbage Collector time: " + (gcTimeAfter - gcTimeBefore) + " ms");
+        System.out.println("Elapsed time: " + (wallClockAfter - wallClockBefore)/1_000_000 + " ms"); // Real time passed.
+        System.out.println("CPU time: " + (cpuAfter - cpuBefore)/1_000_000 + " ms"); // Time that CPU spent executing.
+        System.out.println("Memory used: " + (memAfter - memBefore) / (1024 * 1024) + " MB"); // RAM used during execution.
+        System.out.println("Garbage Collector collections: " + (gcCountAfter - gcCountBefore)); // Amount of GC collections.
+        System.out.println("Garbage Collector time: " + (gcTimeAfter - gcTimeBefore) + " ms"); // Time GC spent collecting memory.
     }
 }

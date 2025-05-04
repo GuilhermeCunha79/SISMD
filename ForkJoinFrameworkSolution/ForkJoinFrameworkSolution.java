@@ -9,7 +9,7 @@ import SharedUtilities.*;
 public class ForkJoinFrameworkSolution {
     private static final ConcurrentHashMap<String, AtomicInteger> counts = new ConcurrentHashMap<>();
 
-    public static void main(String[] args, int maxPages, String fileName, int threadNumber) {
+    public static void run(int maxPages, String fileName, int threadNumber) {
         long start = System.currentTimeMillis();
 
         Iterable<Page> pages = new Pages(maxPages, fileName);
@@ -18,12 +18,12 @@ public class ForkJoinFrameworkSolution {
             if (p != null) allPages.add(p);
         }
 
-        //int cores = Runtime.getRuntime().availableProcessors(); TODO
-        int threshold = Math.max(10, allPages.size() / (threadNumber * 4)); // Garante no mínimo 10
-        System.out.println(threshold);
+        int threshold = Math.max(10, allPages.size() / (threadNumber * 4));
+        System.out.println("Usando " + threadNumber + " threads");
+        System.out.println("Threshold: " + threshold);
 
-        // Inicia o pool e tarefa
-        try (ForkJoinPool pool = new ForkJoinPool()) {
+        // Usa corretamente o número de threads desejado
+        try (ForkJoinPool pool = new ForkJoinPool(threadNumber)) {
             pool.invoke(new WordCountTask(allPages, 0, allPages.size(), threshold));
         }
 
@@ -65,9 +65,10 @@ public class ForkJoinFrameworkSolution {
                 }
             } else {
                 int mid = start + length / 2;
-                WordCountTask left = new WordCountTask(pages, start, mid, threshold);
-                WordCountTask right = new WordCountTask(pages, mid, end, threshold);
-                invokeAll(left, right);
+                invokeAll(
+                        new WordCountTask(pages, start, mid, threshold),
+                        new WordCountTask(pages, mid, end, threshold)
+                );
             }
         }
     }

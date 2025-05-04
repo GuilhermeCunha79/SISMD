@@ -11,7 +11,7 @@ public class MultithreadedSolutionWithThreadPools {
   private static final ConcurrentHashMap<String, AtomicInteger> counts = new ConcurrentHashMap<>(); //  ThreadPool
   // Using AtomicInteger to make a thread-safe counter.
 
-  public static void main(String[] args, int maxPages, String fileName, int threadNumber) throws Exception {
+  public static void run(int maxPages, String fileName, int threadNumber) throws Exception {
     long start = System.currentTimeMillis();
 
     ExecutorService executor = Executors.newFixedThreadPool(threadNumber);

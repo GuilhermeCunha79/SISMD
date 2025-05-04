@@ -1,3 +1,5 @@
+package SequentialSolution;
+
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,7 +11,7 @@ public class SequentialSolution {
   private static final HashMap<String, Integer> counts =
           new HashMap<>();
 
-  public static void main(String[] args, int maxPages, String fileName) throws Exception {
+  public static void run(int maxPages, String fileName) {
 
     Iterable<Page> pages = new Pages(maxPages, fileName);
     for(Page page: pages) {
@@ -27,10 +29,6 @@ public class SequentialSolution {
   }
 
   private static void countWord(String word) {
-    Integer currentCount = counts.get(word);
-    if (currentCount == null)
-      counts.put(word, 1);
-    else
-      counts.put(word, currentCount + 1);
+      counts.merge(word, 1, Integer::sum);
   }
 }

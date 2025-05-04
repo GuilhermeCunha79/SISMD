@@ -7,8 +7,8 @@ import javax.xml.stream.events.*;
 
 public class GenerateWikiFile {
 
-    static final String fileName = "C:\\Users\\Guilherme Cunha\\IdeaProjects\\sismd-project1\\WikiDumps\\large_wiki_file.xml";
-    static final int numPages = 10000000; // Número de páginas a gerar no arquivo
+    static final String fileName = "C:\\Users\\Guilherme Cunha\\IdeaProjects\\sismd-project1\\WikiDumps\\large_wiki_file_100000.xml";
+    static final int numPages = 100000; // Número de páginas a gerar no arquivo
 
     public static void main(String[] args) throws Exception {
         generateXMLFile(numPages, fileName);

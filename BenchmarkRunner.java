@@ -5,6 +5,7 @@ import java.util.Scanner;
 import ForkJoinFrameworkSolution.ForkJoinFrameworkSolution;
 import MultithreadedSolutionWithThreadPools.MultithreadedSolutionWithThreadPools;
 import MultithreadedSolutionWithoutThreadPools.MultithreadedSolutionWithoutThreadPools;
+import SequentialSolution.SequentialSolution;
 
 public class BenchmarkRunner {
     // This benchmark runner was developed to run every implementation to solve the problem.
@@ -50,15 +51,11 @@ public class BenchmarkRunner {
         long memBefore = runtime.totalMemory() - runtime.freeMemory();
         long wallClockBefore = System.nanoTime();
 
-        /* 
-        Place here any of the classes to benchmark, assure that the arguments stay the same throughout every class.
-        */
-
         switch (choice) {
-            case 1 -> SequentialSolution.main(args, maxPages, fileName);
-            case 2 -> MultithreadedSolutionWithThreadPools.main(args, maxPages, fileName, threadNumber);
-            case 3 -> ForkJoinFrameworkSolution.main(args, maxPages, fileName, threadNumber);
-            case 4 -> MultithreadedSolutionWithoutThreadPools.main(args, maxPages, fileName, threadNumber);
+            case 1 -> SequentialSolution.run(maxPages, fileName);
+            case 2 -> MultithreadedSolutionWithThreadPools.run(maxPages, fileName, threadNumber);
+            case 3 -> ForkJoinFrameworkSolution.run(maxPages, fileName, threadNumber);
+            case 4 -> MultithreadedSolutionWithoutThreadPools.run(maxPages, fileName, threadNumber);
             default -> {
                 System.out.println("Invalid option.");
                 return;

@@ -9,7 +9,7 @@ public class MultithreadedSolutionWithoutThreadPools {
   //Uso de ConcurrentHashMap e AtomicInteger para garantir que os dados sao atualizados forma tomica e sem problemas de concorrencia
   private static final ConcurrentHashMap<String, AtomicInteger> counts = new ConcurrentHashMap<>();
 
-  public static void main(String[] args, int maxPages, String fileName, int threadNumber) throws InterruptedException {
+  public static void run(int maxPages, String fileName, int threadNumber) throws InterruptedException {
     long start = System.currentTimeMillis();
 
     //Carrega as páginas

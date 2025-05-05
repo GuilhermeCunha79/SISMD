@@ -66,16 +66,19 @@ public class BenchmarkRunner {
 
         long wallClockAfter = System.nanoTime();
         System.gc();
+        Thread.sleep(100);
+        System.runFinalization();
         long memAfter = runtime.totalMemory() - runtime.freeMemory();
         long gcCountAfter = getGcCount(gcBeans);
         long gcTimeAfter = getGcTime(gcBeans);
+        double memoryUsed = (memAfter - memBefore) / (1024.0 * 1024.0);
 
         return new BenchmarkResult(
                 getImplName(choice),
                 maxPages,
                 threadNumber,
                 (wallClockAfter - wallClockBefore) / 1_000_000.0,
-                (memAfter - memBefore) / (1024.0 * 1024.0),
+                memoryUsed,
                 gcCountAfter - gcCountBefore,
                 gcTimeAfter - gcTimeBefore
         );

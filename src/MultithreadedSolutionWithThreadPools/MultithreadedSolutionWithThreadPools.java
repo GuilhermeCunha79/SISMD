@@ -19,8 +19,13 @@ public class MultithreadedSolutionWithThreadPools {
 
     for (Page page : pages) {
       if (page == null) break;
-      executor.submit(() -> processPage(page));
+      executor.submit(() -> processPage(page)); // Send each page to a thread.
     }
+
+    // By sending each page to a thread, we have the following scenarios:
+    // - The page is small and therefore will free up the thread for the next page.
+    // - The page is big and might take a while to free up the thread.
+    // We could potentially partition in page chunks.
 
     executor.shutdown();
     executor.awaitTermination(5, TimeUnit.MINUTES); // 5 minutes until thread pool termination

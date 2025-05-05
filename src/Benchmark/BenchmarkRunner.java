@@ -102,47 +102,108 @@ public class BenchmarkRunner {
             XSSFSheet sheet = workbook.createSheet("Resultados");
 
             String[] headers = {"Implementação", "maxPages", "Threads", "Tempo (ms)", "Memória (MB)", "GC Count", "GC Time (ms)"};
-            Row headerRow = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) {
-                headerRow.createCell(i).setCellValue(headers[i]);
-            }
 
-            int rowIdx = 1;
-            for (BenchmarkResult result : results) {
-                Row row = sheet.createRow(rowIdx++);
-                row.createCell(0).setCellValue(result.name());
-                row.createCell(1).setCellValue(result.maxPages());
-                row.createCell(2).setCellValue(result.threads());
-                row.createCell(3).setCellValue(result.elapsed());
-                row.createCell(4).setCellValue(result.memory());
-                row.createCell(5).setCellValue(result.gcCount());
-                row.createCell(6).setCellValue(result.gcTime());
-            }
+            // Estilos
+            CellStyle headerStyle = workbook.createCellStyle();
+            XSSFFont boldFont = workbook.createFont();
+            boldFont.setBold(true);
+            headerStyle.setFont(boldFont);
 
-            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+            // Verde claro (melhor por algoritmo)
+            CellStyle lightGreenStyle = workbook.createCellStyle();
+            lightGreenStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+            lightGreenStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            // Agrupar resultados por maxPages
+            // Verde escuro (melhor por grupo de maxPages)
+            CellStyle darkGreenStyle = workbook.createCellStyle();
+            darkGreenStyle.setFillForegroundColor(IndexedColors.BRIGHT_GREEN.getIndex());
+            darkGreenStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            // Ordenar os resultados por maxPages (crescente)
+            results.sort(Comparator.comparingInt(BenchmarkResult::maxPages));
+
+            // Agrupar por maxPages
             Map<Integer, List<BenchmarkResult>> groupedByMaxPages = results.stream()
-                    .collect(Collectors.groupingBy(BenchmarkResult::maxPages));
+                    .collect(Collectors.groupingBy(BenchmarkResult::maxPages, TreeMap::new, Collectors.toList()));
 
-            int chartOffset = rowIdx + 2;
+            // Melhor tempo por algoritmo e maxPages (considerando threads)
+            Map<String, Map<Integer, Double>> bestByAlgorithmAndMaxPages = results.stream()
+                    .collect(Collectors.groupingBy(
+                            BenchmarkResult::name,
+                            Collectors.groupingBy(
+                                    BenchmarkResult::maxPages,
+                                    Collectors.collectingAndThen(
+                                            Collectors.minBy(Comparator.comparingDouble(BenchmarkResult::elapsed)),
+                                            opt -> Math.round(opt.get().elapsed() * 100.0) / 100.0
+                                    )
+                            )
+                    ));
 
-            // Criar gráfico para cada grupo
+            int rowIdx = 0;
+            int chartOffset = 0;
+
+            // Processar os resultados agrupados por maxPages em ordem crescente
             for (Map.Entry<Integer, List<BenchmarkResult>> entry : groupedByMaxPages.entrySet()) {
-                createChart(sheet, workbook, entry.getValue(), chartOffset, entry.getKey());
-                chartOffset += 20; // espaço entre gráficos
+                int currentMaxPages = entry.getKey();
+                List<BenchmarkResult> group = entry.getValue();
+
+                // Melhor tempo dentro deste grupo (maxPages)
+                double bestInGroup = group.stream()
+                        .mapToDouble(BenchmarkResult::elapsed)
+                        .min()
+                        .orElse(Double.MAX_VALUE);
+                bestInGroup = Math.round(bestInGroup * 100.0) / 100.0;
+
+                Row titleRow = sheet.createRow(rowIdx++);
+                titleRow.createCell(0).setCellValue("Resultados para maxPages = " + currentMaxPages);
+
+                Row headerRow = sheet.createRow(rowIdx++);
+                for (int i = 0; i < headers.length; i++) {
+                    Cell cell = headerRow.createCell(i);
+                    cell.setCellValue(headers[i]);
+                    cell.setCellStyle(headerStyle);
+                }
+
+                for (BenchmarkResult result : group) {
+                    Row row = sheet.createRow(rowIdx++);
+                    row.createCell(0).setCellValue(result.name());
+                    row.createCell(1).setCellValue(result.maxPages());
+                    row.createCell(2).setCellValue(result.threads());
+
+                    double roundedElapsed = Math.round(result.elapsed() * 100.0) / 100.0;
+                    Cell timeCell = row.createCell(3);
+                    timeCell.setCellValue(roundedElapsed);
+
+                    boolean isBestInGroup = (roundedElapsed == bestInGroup);
+                    boolean isBestInAlgorithm = (roundedElapsed == bestByAlgorithmAndMaxPages.get(result.name()).get(result.maxPages()));
+
+                    if (isBestInGroup) {
+                        timeCell.setCellStyle(darkGreenStyle); // Melhor tempo deste grupo
+                    } else if (isBestInAlgorithm) {
+                        timeCell.setCellStyle(lightGreenStyle); // Melhor tempo por algoritmo
+                    }
+
+                    row.createCell(4).setCellValue(result.memory());
+                    row.createCell(5).setCellValue(result.gcCount());
+                    row.createCell(6).setCellValue(result.gcTime());
+                }
+
+                for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+
+                chartOffset = rowIdx + 1;
+                createChart(sheet, workbook, group, chartOffset, currentMaxPages);
+                rowIdx = chartOffset + 18;
             }
 
             try (FileOutputStream out = new FileOutputStream("benchmark_summary.xlsx")) {
                 workbook.write(out);
-                System.out.println("✅ Resultados e gráficos salvos em benchmark_summary.xlsx");
+                System.out.println("Resultados e gráficos salvos em benchmark_summary.xlsx");
             }
         } catch (Exception e) {
             System.err.println("Erro ao gerar Excel: " + e.getMessage());
             e.printStackTrace();
         }
     }
-
 
     private static void createChart(XSSFSheet sheet, XSSFWorkbook workbook, List<BenchmarkResult> filteredResults, int anchorRow, int maxPages) {
         XSSFDrawing drawing = sheet.createDrawingPatriarch();

@@ -13,6 +13,7 @@ import SequentialSolution.SequentialSolution;
 import ForkJoinFrameworkSolution.ForkJoinFrameworkSolution;
 import MultithreadedSolutionWithoutThreadPools.MultithreadedSolutionWithoutThreadPools;
 import MultithreadedSolutionWithThreadPools.MultithreadedSolutionWithThreadPools;
+import CompletableFuturesBasedSolution.CompletableFuturesBasedSolution;
 
 public class BenchmarkRunner {
 
@@ -26,7 +27,7 @@ public class BenchmarkRunner {
 
         try {
             for (int maxPages : maxPagesArray) {
-                for (int choice = 1; choice <= 4; choice++) {
+                for (int choice = 1; choice <= 5; choice++) {
                     if (choice == 1) {
                         allResults.add(runBenchmark(choice, maxPages, fileName, 1));
                     } else {
@@ -59,6 +60,7 @@ public class BenchmarkRunner {
             case 2 -> MultithreadedSolutionWithThreadPools.run(maxPages, fileName, threadNumber);
             case 3 -> ForkJoinFrameworkSolution.run(maxPages, fileName, threadNumber);
             case 4 -> MultithreadedSolutionWithoutThreadPools.run(maxPages, fileName, threadNumber);
+            case 5 -> CompletableFuturesBasedSolution.run(maxPages,fileName, threadNumber);
             default -> throw new IllegalArgumentException("Opção inválida: " + choice);
         }
 
@@ -93,6 +95,7 @@ public class BenchmarkRunner {
             case 2 -> "ThreadPool";
             case 3 -> "ForkJoin";
             case 4 -> "MultithreadedManual";
+            case 5 -> "CompletableFuturesBasedSolution";
             default -> "Desconhecido";
         };
     }

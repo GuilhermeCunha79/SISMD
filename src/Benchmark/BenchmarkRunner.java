@@ -1,12 +1,12 @@
 package Benchmark;
 
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.*;
-import org.apache.poi.xddf.usermodel.chart.*;
 import java.io.FileOutputStream;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
+import com.sun.management.OperatingSystemMXBean;
+
 import java.util.*;
+import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
 import SequentialSolution.SequentialSolution;
@@ -14,11 +14,14 @@ import ForkJoinFrameworkSolution.ForkJoinFrameworkSolution;
 import MultithreadedSolutionWithoutThreadPools.MultithreadedSolutionWithoutThreadPools;
 import MultithreadedSolutionWithThreadPools.MultithreadedSolutionWithThreadPools;
 import CompletableFuturesBasedSolution.CompletableFuturesBasedSolution;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xddf.usermodel.chart.*;
+import org.apache.poi.xssf.usermodel.*;
 
 public class BenchmarkRunner {
 
     public static void main(String[] args) {
-        String fileName = "WikiDumps/large_wiki_file.xml";
+        String fileName = "WikiDumps/enwiki-20250420-pages-meta-current1.xml-p1p41242";
 
         int[] maxPagesArray = {500, 5000, 10000, 25000}; //adicionar consoante necessário. TODO: Verificar que intervalo de amostras colocar
         int[] threadCounts = {2, 4, 8, 12, 16}; //TODO: Verificar se se deve adicionar mais valores
@@ -48,48 +51,45 @@ public class BenchmarkRunner {
     private static BenchmarkResult runBenchmark(int choice, int maxPages, String fileName, int threadNumber) throws Exception {
         Runtime runtime = Runtime.getRuntime();
         List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
+        OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
 
-        long gcCountBefore = getGcCount(gcBeans);
-        long gcTimeBefore = getGcTime(gcBeans);
+        long gcCountBefore = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionCount).sum();
+        long gcTimeBefore  = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionTime).sum();
         System.gc();
-        long memBefore = runtime.totalMemory() - runtime.freeMemory();
-        long wallClockBefore = System.nanoTime();
+        long memBefore     = runtime.totalMemory() - runtime.freeMemory();
+        long timeBefore    = System.nanoTime();
+        double cpuBefore   = osBean.getProcessCpuLoad();
 
+        // Executa a implementação escolhida
         switch (choice) {
             case 1 -> SequentialSolution.run(maxPages, fileName);
             case 2 -> MultithreadedSolutionWithThreadPools.run(maxPages, fileName, threadNumber);
             case 3 -> ForkJoinFrameworkSolution.run(maxPages, fileName, threadNumber);
             case 4 -> MultithreadedSolutionWithoutThreadPools.run(maxPages, fileName, threadNumber);
-            case 5 -> CompletableFuturesBasedSolution.run(maxPages,fileName, threadNumber);
+            case 5 -> CompletableFuturesBasedSolution.run(maxPages, fileName, threadNumber);
             default -> throw new IllegalArgumentException("Opção inválida: " + choice);
         }
 
-        long wallClockAfter = System.nanoTime();
+        long timeAfter = System.nanoTime();
         System.gc();
         Thread.sleep(100);
-        System.runFinalization();
         long memAfter = runtime.totalMemory() - runtime.freeMemory();
-        long gcCountAfter = getGcCount(gcBeans);
-        long gcTimeAfter = getGcTime(gcBeans);
-        double memoryUsed = (memAfter - memBefore) / (1024.0 * 1024.0);
+        long gcCountAfter = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionCount).sum();
+        long gcTimeAfter  = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionTime).sum();
+        double cpuAfter   = osBean.getProcessCpuLoad();
+
+        double elapsedMs = (timeAfter - timeBefore) / 1_000_000.0;
+        double memoryMb  = (memAfter - memBefore) / (1024.0 * 1024.0);
+        double cpuUsagePct = (cpuAfter - cpuBefore) * 100;
 
         return new BenchmarkResult(
-                getImplName(choice),
-                maxPages,
-                threadNumber,
-                (wallClockAfter - wallClockBefore) / 1_000_000.0,
-                memoryUsed,
+                getImplName(choice), maxPages, threadNumber,
+                Math.round(elapsedMs * 100.0) / 100.0,
+                Math.round(memoryMb * 100.0)   / 100.0,
                 gcCountAfter - gcCountBefore,
-                gcTimeAfter - gcTimeBefore
+                gcTimeAfter  - gcTimeBefore,
+                Math.round(cpuUsagePct * 100.0) / 100.0
         );
-    }
-
-    private static long getGcCount(List<GarbageCollectorMXBean> beans) {
-        return beans.stream().mapToLong(GarbageCollectorMXBean::getCollectionCount).sum();
-    }
-
-    private static long getGcTime(List<GarbageCollectorMXBean> beans) {
-        return beans.stream().mapToLong(GarbageCollectorMXBean::getCollectionTime).sum();
     }
 
     private static String getImplName(int choice) {
@@ -107,62 +107,37 @@ public class BenchmarkRunner {
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             XSSFSheet sheet = workbook.createSheet("Resultados");
 
-            String[] headers = {"Implementação", "maxPages", "Threads", "Tempo (ms)", "Memória (MB)", "GC Count", "GC Time (ms)"};
-
-            // Estilos
+            // Cabeçalhos
+            String[] headers = {"Implementação", "maxPages", "Threads", "Tempo (ms)", "Memória (MB)", "GC Count", "GC Time (ms)", "CPU Usage (%)"};
             CellStyle headerStyle = workbook.createCellStyle();
-            XSSFFont boldFont = workbook.createFont();
-            boldFont.setBold(true);
+            XSSFFont boldFont = workbook.createFont(); boldFont.setBold(true);
             headerStyle.setFont(boldFont);
 
-            // Verde claro (melhor por algoritmo)
+            // Estilos de destaque
             CellStyle lightGreenStyle = workbook.createCellStyle();
             lightGreenStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
             lightGreenStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-
-            // Verde escuro (melhor por grupo de maxPages)
             CellStyle darkGreenStyle = workbook.createCellStyle();
             darkGreenStyle.setFillForegroundColor(IndexedColors.BRIGHT_GREEN.getIndex());
             darkGreenStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            // Ordenar os resultados por maxPages (crescente)
+            // Ordena e agrupa por maxPages
             results.sort(Comparator.comparingInt(BenchmarkResult::maxPages));
-
-            // Agrupar por maxPages
-            Map<Integer, List<BenchmarkResult>> groupedByMaxPages = results.stream()
-                    .collect(Collectors.groupingBy(BenchmarkResult::maxPages, TreeMap::new, Collectors.toList()));
-
-            // Melhor tempo por algoritmo e maxPages (considerando threads)
-            Map<String, Map<Integer, Double>> bestByAlgorithmAndMaxPages = results.stream()
-                    .collect(Collectors.groupingBy(
-                            BenchmarkResult::name,
-                            Collectors.groupingBy(
-                                    BenchmarkResult::maxPages,
-                                    Collectors.collectingAndThen(
-                                            Collectors.minBy(Comparator.comparingDouble(BenchmarkResult::elapsed)),
-                                            opt -> Math.round(opt.get().elapsed() * 100.0) / 100.0
-                                    )
-                            )
-                    ));
+            Map<Integer, List<BenchmarkResult>> grouped = results.stream()
+                    .collect(Collectors.groupingBy(BenchmarkResult::maxPages, LinkedHashMap::new, Collectors.toList()));
 
             int rowIdx = 0;
-            int chartOffset = 0;
-
-            // Processar os resultados agrupados por maxPages em ordem crescente
-            for (Map.Entry<Integer, List<BenchmarkResult>> entry : groupedByMaxPages.entrySet()) {
-                int currentMaxPages = entry.getKey();
+            for (Map.Entry<Integer, List<BenchmarkResult>> entry : grouped.entrySet()) {
+                int maxPages = entry.getKey();
                 List<BenchmarkResult> group = entry.getValue();
 
-                // Melhor tempo dentro deste grupo (maxPages)
-                double bestInGroup = group.stream()
-                        .mapToDouble(BenchmarkResult::elapsed)
-                        .min()
-                        .orElse(Double.MAX_VALUE);
-                bestInGroup = Math.round(bestInGroup * 100.0) / 100.0;
-
+                // Título do grupo
                 Row titleRow = sheet.createRow(rowIdx++);
-                titleRow.createCell(0).setCellValue("Resultados para maxPages = " + currentMaxPages);
+                Cell titleCell = titleRow.createCell(0);
+                titleCell.setCellValue("Resultados para maxPages = " + maxPages);
+                titleCell.getCellStyle().setFont(boldFont);
 
+                // Cabeçalho da tabela
                 Row headerRow = sheet.createRow(rowIdx++);
                 for (int i = 0; i < headers.length; i++) {
                     Cell cell = headerRow.createCell(i);
@@ -170,35 +145,60 @@ public class BenchmarkRunner {
                     cell.setCellStyle(headerStyle);
                 }
 
-                for (BenchmarkResult result : group) {
+                // Cálculo dos melhores por métrica
+                double bestTimeGroup = group.stream().mapToDouble(BenchmarkResult::elapsed).min().orElse(Double.MAX_VALUE);
+                double bestMemoryGroup = group.stream().mapToDouble(BenchmarkResult::memory).min().orElse(Double.MAX_VALUE);
+                double bestCpuGroup = group.stream().mapToDouble(BenchmarkResult::cpuUsage).min().orElse(Double.MAX_VALUE);
+                // Melhores por algoritmo
+                Map<String, Double> bestTimePerImpl = group.stream().collect(Collectors.groupingBy(
+                        BenchmarkResult::name,
+                        Collectors.collectingAndThen(Collectors.minBy(Comparator.comparingDouble(BenchmarkResult::elapsed)), opt -> opt.get().elapsed())
+                ));
+                Map<String, Double> bestMemoryPerImpl = group.stream().collect(Collectors.groupingBy(
+                        BenchmarkResult::name,
+                        Collectors.collectingAndThen(Collectors.minBy(Comparator.comparingDouble(BenchmarkResult::memory)), opt -> opt.get().memory())
+                ));
+                Map<String, Double> bestCpuPerImpl = group.stream().collect(Collectors.groupingBy(
+                        BenchmarkResult::name,
+                        Collectors.collectingAndThen(Collectors.minBy(Comparator.comparingDouble(BenchmarkResult::cpuUsage)), opt -> opt.get().cpuUsage())
+                ));
+
+                // Linhas de dados
+                for (BenchmarkResult r : group) {
                     Row row = sheet.createRow(rowIdx++);
-                    row.createCell(0).setCellValue(result.name());
-                    row.createCell(1).setCellValue(result.maxPages());
-                    row.createCell(2).setCellValue(result.threads());
+                    row.createCell(0).setCellValue(r.name());
+                    row.createCell(1).setCellValue(r.maxPages());
+                    row.createCell(2).setCellValue(r.threads());
 
-                    double roundedElapsed = Math.round(result.elapsed() * 100.0) / 100.0;
                     Cell timeCell = row.createCell(3);
-                    timeCell.setCellValue(roundedElapsed);
+                    timeCell.setCellValue(r.elapsed());
+                    if (r.elapsed() == bestTimeGroup) timeCell.setCellStyle(darkGreenStyle);
+                    else if (r.elapsed() == bestTimePerImpl.get(r.name())) timeCell.setCellStyle(lightGreenStyle);
 
-                    boolean isBestInGroup = (roundedElapsed == bestInGroup);
-                    boolean isBestInAlgorithm = (roundedElapsed == bestByAlgorithmAndMaxPages.get(result.name()).get(result.maxPages()));
+                    Cell memCell = row.createCell(4);
+                    memCell.setCellValue(r.memory());
+                    if (r.memory() == bestMemoryGroup) memCell.setCellStyle(darkGreenStyle);
+                    else if (r.memory() == bestMemoryPerImpl.get(r.name())) memCell.setCellStyle(lightGreenStyle);
 
-                    if (isBestInGroup) {
-                        timeCell.setCellStyle(darkGreenStyle); // Melhor tempo deste grupo
-                    } else if (isBestInAlgorithm) {
-                        timeCell.setCellStyle(lightGreenStyle); // Melhor tempo por algoritmo
-                    }
+                    row.createCell(5).setCellValue(r.gcCount());
+                    row.createCell(6).setCellValue(r.gcTime());
 
-                    row.createCell(4).setCellValue(result.memory());
-                    row.createCell(5).setCellValue(result.gcCount());
-                    row.createCell(6).setCellValue(result.gcTime());
+                    Cell cpuCell = row.createCell(7);
+                    cpuCell.setCellValue(r.cpuUsage());
+                    if (r.cpuUsage() == bestCpuGroup) cpuCell.setCellStyle(darkGreenStyle);
+                    else if (r.cpuUsage() == bestCpuPerImpl.get(r.name())) cpuCell.setCellStyle(lightGreenStyle);
                 }
 
+                // Ajustar colunas
                 for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
 
-                chartOffset = rowIdx + 1;
-                createChart(sheet, workbook, group, chartOffset, currentMaxPages);
-                rowIdx = chartOffset + 18;
+                // Inserir gráficos abaixo
+                int chartStart = rowIdx + 1;
+                createChart(sheet, workbook, group, chartStart, maxPages, "Tempo (ms)", BenchmarkResult::elapsed);
+                createChart(sheet, workbook, group, chartStart + 16, maxPages, "Memória (MB)", BenchmarkResult::memory);
+                createChart(sheet, workbook, group, chartStart + 32, maxPages, "CPU Usage (%)", BenchmarkResult::cpuUsage);
+
+                rowIdx = chartStart + 48;
             }
 
             try (FileOutputStream out = new FileOutputStream("benchmark_summary.xlsx")) {
@@ -206,44 +206,45 @@ public class BenchmarkRunner {
                 System.out.println("Resultados e gráficos salvos em benchmark_summary.xlsx");
             }
         } catch (Exception e) {
-            System.err.println("Erro ao gerar Excel: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private static void createChart(XSSFSheet sheet, XSSFWorkbook workbook, List<BenchmarkResult> filteredResults, int anchorRow, int maxPages) {
+
+    private static <T extends Number> void createChart(XSSFSheet sheet, XSSFWorkbook workbook,
+                                                       List<BenchmarkResult> data, int anchorRow,
+                                                       int maxPages, String metricName,
+                                                       ToDoubleFunction<BenchmarkResult> mapper) {
         XSSFDrawing drawing = sheet.createDrawingPatriarch();
         XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, 0, anchorRow, 10, anchorRow + 15);
         XSSFChart chart = drawing.createChart(anchor);
-        chart.setTitleText("Tempo por Implementação - maxPages = " + maxPages);
+        chart.setTitleText(metricName + " por Implementação - maxPages=" + maxPages);
         chart.setTitleOverlay(false);
 
-        XDDFChartLegend legend = chart.getOrAddLegend();
-        legend.setPosition(LegendPosition.RIGHT);
+        XDDFCategoryAxis xAxis = chart.createCategoryAxis(org.apache.poi.xddf.usermodel.chart.AxisPosition.BOTTOM);
+        xAxis.setTitle("Impl + Threads");
+        XDDFValueAxis yAxis = chart.createValueAxis(org.apache.poi.xddf.usermodel.chart.AxisPosition.LEFT);
+        yAxis.setTitle(metricName);
 
-        XDDFCategoryAxis xAxis = chart.createCategoryAxis(AxisPosition.BOTTOM);
-        xAxis.setTitle("Implementação + Threads");
-
-        XDDFValueAxis yAxis = chart.createValueAxis(AxisPosition.LEFT);
-        yAxis.setTitle("Tempo (ms)");
-
-        List<String> labels = new ArrayList<>();
+        List<String> categories = new ArrayList<>();
         List<Double> values = new ArrayList<>();
-
-        for (BenchmarkResult r : filteredResults) {
-            labels.add(r.name() + " - T" + r.threads());
-            values.add(r.elapsed());
+        for (BenchmarkResult r : data) {
+            categories.add(r.name() + "-T" + r.threads());
+            values.add(mapper.applyAsDouble(r));
         }
 
-        XDDFCategoryDataSource categories = XDDFDataSourcesFactory.fromArray(labels.toArray(new String[0]));
-        XDDFNumericalDataSource<Double> data = XDDFDataSourcesFactory.fromArray(values.toArray(new Double[0]));
+        XDDFCategoryDataSource cat = org.apache.poi.xddf.usermodel.chart.XDDFDataSourcesFactory.fromArray(
+                categories.toArray(new String[0]));
+        XDDFNumericalDataSource<Double> val = org.apache.poi.xddf.usermodel.chart.XDDFDataSourcesFactory.fromArray(
+                values.toArray(new Double[0]));
 
-        XDDFBarChartData chartData = (XDDFBarChartData) chart.createData(ChartTypes.BAR, xAxis, yAxis);
-        XDDFBarChartData.Series series = (XDDFBarChartData.Series) chartData.addSeries(categories, data);
-        series.setTitle("Tempo de Execução", null);
+        XDDFBarChartData chartData = (XDDFBarChartData) chart.createData(
+                org.apache.poi.xddf.usermodel.chart.ChartTypes.BAR, xAxis, yAxis);
+        XDDFBarChartData.Series series = (XDDFBarChartData.Series) chartData.addSeries(cat, val);
+        series.setTitle(metricName, null);
         chart.plot(chartData);
     }
 
 
-    public record BenchmarkResult(String name, int maxPages, int threads, double elapsed, double memory, long gcCount, long gcTime) {}
+    public record BenchmarkResult(String name, int maxPages, int threads, double elapsed, double memory, long gcCount, long gcTime, double cpuUsage) {}
 }

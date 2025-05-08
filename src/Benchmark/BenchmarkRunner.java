@@ -20,7 +20,7 @@ public class BenchmarkRunner {
     public static void main(String[] args) {
         String fileName = "WikiDumps/large_wiki_file.xml";
 
-        int[] maxPagesArray = {10000, 25000, 50000, 75000, 100000}; //adicionar consoante necessário. TODO: Verificar que intervalo de amostras colocar
+        int[] maxPagesArray = {500, 5000, 10000, 25000}; //adicionar consoante necessário. TODO: Verificar que intervalo de amostras colocar
         int[] threadCounts = {2, 4, 8, 12, 16}; //TODO: Verificar se se deve adicionar mais valores
 
         List<BenchmarkResult> allResults = new ArrayList<>();

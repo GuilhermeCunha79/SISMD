@@ -14,7 +14,8 @@ public class MultithreadedSolutionWithThreadPools {
   public static void run(int maxPages, String fileName, int threadNumber) throws Exception {
     long start = System.currentTimeMillis();
 
-    ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
+    // here we could use all the available cores but for performance studies it is better to receive as argument.
+    ExecutorService executor = Executors.newFixedThreadPool(threadNumber); 
     Iterable<Page> pages = new Pages(maxPages, fileName);
 
     for (Page page : pages) {

@@ -15,6 +15,7 @@ import MultithreadedSolutionWithoutThreadPools.MultithreadedSolutionWithoutThrea
 import MultithreadedSolutionWithThreadPools.MultithreadedSolutionWithThreadPools;
 import CompletableFuturesBasedSolution.CompletableFuturesBasedSolution;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xddf.usermodel.XDDFShapeProperties;
 import org.apache.poi.xddf.usermodel.chart.*;
 import org.apache.poi.xssf.usermodel.*;
 
@@ -23,7 +24,7 @@ public class BenchmarkRunner {
     public static void main(String[] args) {
         String fileName = "WikiDumps/enwiki-20250420-pages-meta-current1.xml-p1p41242";
 
-        int[] maxPagesArray = {10000, 25000, 50000, 75000, 100000}; //adicionar consoante necessário. TODO: Verificar que intervalo de amostras colocar
+        int[] maxPagesArray = {500, 5000, 10000, 25000}; //adicionar consoante necessário. TODO: Verificar que intervalo de amostras colocar
         int[] threadCounts = {2, 4, 8, 12, 16}; //TODO: Verificar se se deve adicionar mais valores
 
         List<BenchmarkResult> allResults = new ArrayList<>();
@@ -210,7 +211,6 @@ public class BenchmarkRunner {
         }
     }
 
-
     private static <T extends Number> void createChart(XSSFSheet sheet, XSSFWorkbook workbook,
                                                        List<BenchmarkResult> data, int anchorRow,
                                                        int maxPages, String metricName,
@@ -238,11 +238,43 @@ public class BenchmarkRunner {
         XDDFNumericalDataSource<Double> val = org.apache.poi.xddf.usermodel.chart.XDDFDataSourcesFactory.fromArray(
                 values.toArray(new Double[0]));
 
-        XDDFBarChartData chartData = (XDDFBarChartData) chart.createData(
-                org.apache.poi.xddf.usermodel.chart.ChartTypes.BAR, xAxis, yAxis);
-        XDDFBarChartData.Series series = (XDDFBarChartData.Series) chartData.addSeries(cat, val);
+        XDDFChartData chartData = chart.createData(
+                ChartTypes.BAR, xAxis, yAxis);
+
+        if (chartData instanceof XDDFBarChartData) {
+            ((XDDFBarChartData) chartData).setBarDirection(org.apache.poi.xddf.usermodel.chart.BarDirection.COL);
+        }
+
+        yAxis.setCrossBetween(org.apache.poi.xddf.usermodel.chart.AxisCrossBetween.BETWEEN);
+
+        // Calcular valores máximos e mínimos para ajustar a escala do eixo Y
+        double maxValue = values.stream().mapToDouble(Double::doubleValue).max().orElse(1000.0);
+        double minValue = values.stream().mapToDouble(Double::doubleValue).min().orElse(0.0);
+
+        yAxis.setMinimum(minValue);  // Ajuste o valor mínimo
+        yAxis.setMaximum(maxValue * 1.1);  // Ajuste o valor máximo para dar margem ao gráfico
+
+        // Ajuste do intervalo de unidades principais no eixo Y
+        double yAxisRange = maxValue - minValue;
+        double majorUnit = yAxisRange / 10;  // Divida o intervalo por 10 para obter um espaçamento mais preciso
+        yAxis.setMajorUnit(majorUnit);
+
+        // Ajustando o estilo da grade principal para maior precisão
+        XDDFShapeProperties majorGridProperties = yAxis.getOrAddMajorGridProperties();
+        if (majorGridProperties != null && majorGridProperties.getLineProperties() != null) {
+            majorGridProperties.getLineProperties().setWidth(0.5);
+        }
+
+        XDDFChartData.Series series = chartData.addSeries(cat, val);
         series.setTitle(metricName, null);
         chart.plot(chartData);
+
+        // Ajuste a altura da linha onde o gráfico foi ancorado
+        Row row = sheet.getRow(anchorRow);
+        if (row == null) {
+            row = sheet.createRow(anchorRow); // Crie a linha se ela não existir
+        }
+        row.setHeightInPoints(300); // Defina a altura da linha para o gráfico
     }
 
 

@@ -7,6 +7,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import SharedUtilities.*;
 
 public class ForkJoinFrameworkSolution {
+
+
     private static final ConcurrentHashMap<String, AtomicInteger> counts = new ConcurrentHashMap<>();
 
     public static void run(int maxPages, String fileName, int threadNumber) {
@@ -19,8 +21,6 @@ public class ForkJoinFrameworkSolution {
         }
 
         int threshold = Math.max(10, allPages.size() / (threadNumber * 4));
-        System.out.println("Usando " + threadNumber + " threads");
-        System.out.println("Threshold: " + threshold);
 
         ForkJoinPool pool = new ForkJoinPool(threadNumber);
         try {
@@ -28,7 +28,6 @@ public class ForkJoinFrameworkSolution {
         } finally {
             pool.shutdown();
         }
-
 
         long end = System.currentTimeMillis();
         System.out.println("Processed pages: " + allPages.size());

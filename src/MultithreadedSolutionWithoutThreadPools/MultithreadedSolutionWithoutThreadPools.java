@@ -24,6 +24,7 @@ public class MultithreadedSolutionWithoutThreadPools {
     List<List<Page>> pageChunks = splitPages(allPages, threadNumber);
 
     //Processa páginas em paralelo
+
     List<Thread> threads = new ArrayList<>();
     for (List<Page> chunk : pageChunks) {
       Thread thread = new Thread(() -> processPages(chunk));
@@ -32,6 +33,7 @@ public class MultithreadedSolutionWithoutThreadPools {
     }
 
     //Espera todas as threads terminarem
+
     for (Thread thread : threads) {
       thread.join();
     }
@@ -47,6 +49,7 @@ public class MultithreadedSolutionWithoutThreadPools {
   }
 
   //Divide as páginas em partes para processar em paralelo
+
   private static List<List<Page>> splitPages(List<Page> allPages, int numChunks) {
     List<List<Page>> chunks = new ArrayList<>();
     int totalPages = allPages.size();
@@ -82,6 +85,7 @@ public class MultithreadedSolutionWithoutThreadPools {
   }
 
   //Conta a palavra, atualizando de forma atómica a variavel counts
+
   private static void countWord(String word) {
     counts.computeIfAbsent(word, k -> new AtomicInteger(0)).incrementAndGet();
   }

@@ -21,7 +21,7 @@ public class BenchmarkRunnerGC {
     public static void main(String[] args) {
         String fileName = "WikiDumps/enwiki-20250420-pages-meta-current1.xml-p1p41242";
 
-        int[] maxPagesArray = {100, 200, 1000};
+        int[] maxPagesArray = {500, 5000, 10000, 25000};
         int[] threadCounts = {2, 4, 8, 12, 16};
         String[] gcTypes = {"G1GC", "ParallelGC", "SerialGC", "DefaultGC"};
 
@@ -80,9 +80,18 @@ public class BenchmarkRunnerGC {
         }
 
         // Log do GC
-        String logDir = "Logs/" + implName;
+        String logDir = "Logs/Machine1" + implName;
         Files.createDirectories(Paths.get(logDir));
-        command.add("-Xlog:gc*:file=" + logDir + "/gc-" + gcType.toLowerCase() + "-" + maxPages + "-" + threadNumber + ".log");
+        String logFilePath = logDir + "/gc-" + gcType.toLowerCase() + "-" + maxPages + "-" + threadNumber + ".log";
+
+        // Verificar se o ficheiro já existe e remover
+        Path logFile = Paths.get(logFilePath);
+        if (Files.exists(logFile)) {
+            Files.delete(logFile);
+        }
+
+        // Adicionar o caminho do log ao comando
+        command.add("-Xlog:gc*:file=" + logFilePath);
 
         // Classe a ser executada e argumentos
         command.add("-cp");
@@ -125,7 +134,7 @@ public class BenchmarkRunnerGC {
         }
 
         // Ler os dados do arquivo de log do GC para extrair métricas
-        GCMetrics gcMetrics = parseGCLog(logDir + "/gc-" + gcType.toLowerCase() + "-" + maxPages + "-" + threadNumber + ".log");
+        GCMetrics gcMetrics = parseGCLog(logFilePath);
 
         // Calcula o tempo em ms
         double elapsedMs = (timeAfter - timeBefore) / 1_000_000.0;
@@ -242,103 +251,111 @@ public class BenchmarkRunnerGC {
             case 2 -> "ThreadPool";
             case 3 -> "ForkJoin";
             case 4 -> "MultithreadedManual";
-            case 5 -> "CompletableFuturesBasedSolution";
+            case 5 -> "CompFutures";
             default -> "Desconhecido";
         };
     }
 
     private static void saveResultsToExcel(List<BenchmarkResult> results) {
-        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
-            XSSFSheet sheet = workbook.createSheet("Resultados");
+        String outputDir = "BenchmarkResultsOut/BenchmarkRunnerGC";
+        try {
+            // Cria o diretório se não existir
+            Files.createDirectories(Paths.get(outputDir));
 
-            // Cabeçalhos
-            String[] headers = {"Implementação", "maxPages", "Threads", "Tempo (ms)", "Memória (MB)", "CPU Usage (%)"};
-            CellStyle headerStyle = workbook.createCellStyle();
-            XSSFFont boldFont = workbook.createFont();
-            boldFont.setBold(true);
-            headerStyle.setFont(boldFont);
+            try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+                XSSFSheet sheet = workbook.createSheet("Resultados");
 
-            // Estilos de cor
-            CellStyle lightGreenStyle = workbook.createCellStyle();
-            lightGreenStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
-            lightGreenStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+                // Cabeçalhos
+                String[] headers = {"Implementação", "maxPages", "Threads", "Tempo (ms)", "Memória (MB)", "CPU Usage (%)"};
+                CellStyle headerStyle = workbook.createCellStyle();
+                XSSFFont boldFont = workbook.createFont();
+                boldFont.setBold(true);
+                headerStyle.setFont(boldFont);
 
-            CellStyle darkGreenStyle = workbook.createCellStyle();
-            darkGreenStyle.setFillForegroundColor(IndexedColors.BRIGHT_GREEN.getIndex());
-            darkGreenStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+                // Estilos de cor
+                CellStyle lightGreenStyle = workbook.createCellStyle();
+                lightGreenStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+                lightGreenStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            // Ordena e agrupa por maxPages e GC Type
-            results.sort(Comparator.comparingInt(BenchmarkResult::maxPages).thenComparing(BenchmarkResult::gcType));
-            Map<String, List<BenchmarkResult>> grouped = results.stream()
-                    .collect(Collectors.groupingBy(r -> r.maxPages() + "_" + r.gcType(), LinkedHashMap::new, Collectors.toList()));
+                CellStyle darkGreenStyle = workbook.createCellStyle();
+                darkGreenStyle.setFillForegroundColor(IndexedColors.BRIGHT_GREEN.getIndex());
+                darkGreenStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            int rowIdx = 0;
+                // Ordena e agrupa por maxPages e GC Type
+                results.sort(Comparator.comparingInt(BenchmarkResult::maxPages).thenComparing(BenchmarkResult::gcType));
+                Map<String, List<BenchmarkResult>> grouped = results.stream()
+                        .collect(Collectors.groupingBy(r -> r.maxPages() + "_" + r.gcType(), LinkedHashMap::new, Collectors.toList()));
 
-            for (Map.Entry<String, List<BenchmarkResult>> entry : grouped.entrySet()) {
-                String[] parts = entry.getKey().split("_");
-                int maxPages = Integer.parseInt(parts[0]);
-                String gcType = parts[1];
+                int rowIdx = 0;
 
-                // Título do grupo
-                Row titleRow = sheet.createRow(rowIdx++);
-                Cell titleCell = titleRow.createCell(0);
-                titleCell.setCellValue("Resultados para maxPages = " + maxPages + ", GC = " + gcType);
-                titleCell.setCellStyle(headerStyle);
+                for (Map.Entry<String, List<BenchmarkResult>> entry : grouped.entrySet()) {
+                    String[] parts = entry.getKey().split("_");
+                    int maxPages = Integer.parseInt(parts[0]);
+                    String gcType = parts[1];
 
-                // Cabeçalho da tabela
-                Row headerRow = sheet.createRow(rowIdx++);
-                for (int i = 0; i < headers.length; i++) {
-                    Cell cell = headerRow.createCell(i);
-                    cell.setCellValue(headers[i]);
-                    cell.setCellStyle(headerStyle);
-                }
+                    // Título do grupo
+                    Row titleRow = sheet.createRow(rowIdx++);
+                    Cell titleCell = titleRow.createCell(0);
+                    titleCell.setCellValue("Resultados para maxPages = " + maxPages + ", GC = " + gcType);
+                    titleCell.setCellStyle(headerStyle);
 
-                // Encontrar o melhor tempo de execução geral do grupo
-                BenchmarkResult bestGroupResult = entry.getValue().stream()
-                        .min(Comparator.comparingDouble(BenchmarkResult::elapsed))
-                        .orElse(null);
-
-                // Agrupar por algoritmo e encontrar o melhor tempo para cada algoritmo
-                Map<String, BenchmarkResult> bestByAlgorithm = entry.getValue().stream()
-                        .collect(Collectors.groupingBy(BenchmarkResult::name,
-                                Collectors.minBy(Comparator.comparingDouble(BenchmarkResult::elapsed))))
-                        .entrySet().stream()
-                        .filter(e -> e.getValue().isPresent())
-                        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get()));
-
-                // Dados
-                for (BenchmarkResult r : entry.getValue()) {
-                    Row row = sheet.createRow(rowIdx++);
-                    row.createCell(0).setCellValue(r.name());
-                    row.createCell(1).setCellValue(r.maxPages());
-                    row.createCell(2).setCellValue(r.threads());
-                    row.createCell(3).setCellValue(r.elapsed());
-                    row.createCell(4).setCellValue(r.memory());
-                    row.createCell(5).setCellValue(r.cpuUsage());
-
-                    // Aplicar verde claro ao melhor tempo de cada algoritmo
-                    if (bestByAlgorithm.containsKey(r.name()) && bestByAlgorithm.get(r.name()).equals(r)) {
-                        row.getCell(3).setCellStyle(lightGreenStyle);
+                    // Cabeçalho da tabela
+                    Row headerRow = sheet.createRow(rowIdx++);
+                    for (int i = 0; i < headers.length; i++) {
+                        Cell cell = headerRow.createCell(i);
+                        cell.setCellValue(headers[i]);
+                        cell.setCellStyle(headerStyle);
                     }
 
-                    // Aplicar verde escuro ao melhor tempo geral do grupo
-                    if (r.equals(bestGroupResult)) {
-                        row.getCell(3).setCellStyle(darkGreenStyle);
+                    // Encontrar o melhor tempo de execução geral do grupo
+                    BenchmarkResult bestGroupResult = entry.getValue().stream()
+                            .min(Comparator.comparingDouble(BenchmarkResult::elapsed))
+                            .orElse(null);
+
+                    // Agrupar por algoritmo e encontrar o melhor tempo para cada algoritmo
+                    Map<String, BenchmarkResult> bestByAlgorithm = entry.getValue().stream()
+                            .collect(Collectors.groupingBy(BenchmarkResult::name,
+                                    Collectors.minBy(Comparator.comparingDouble(BenchmarkResult::elapsed))))
+                            .entrySet().stream()
+                            .filter(e -> e.getValue().isPresent())
+                            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get()));
+
+                    // Dados
+                    for (BenchmarkResult r : entry.getValue()) {
+                        Row row = sheet.createRow(rowIdx++);
+                        row.createCell(0).setCellValue(r.name());
+                        row.createCell(1).setCellValue(r.maxPages());
+                        row.createCell(2).setCellValue(r.threads());
+                        row.createCell(3).setCellValue(r.elapsed());
+                        row.createCell(4).setCellValue(r.memory());
+                        row.createCell(5).setCellValue(r.cpuUsage());
+
+                        // Aplicar verde claro ao melhor tempo de cada algoritmo
+                        if (bestByAlgorithm.containsKey(r.name()) && bestByAlgorithm.get(r.name()).equals(r)) {
+                            row.getCell(3).setCellStyle(lightGreenStyle);
+                        }
+
+                        // Aplicar verde escuro ao melhor tempo geral do grupo
+                        if (r.equals(bestGroupResult)) {
+                            row.getCell(3).setCellStyle(darkGreenStyle);
+                        }
                     }
+
+                    // Inserir gráficos abaixo
+                    int chartStart = rowIdx + 1;
+                    createChart(sheet, workbook, entry.getValue(), chartStart, maxPages, gcType, "Tempo (ms)", BenchmarkResult::elapsed);
+                    createChart(sheet, workbook, entry.getValue(), chartStart + 16, maxPages, gcType, "Memória (MB)", BenchmarkResult::memory);
+                    createChart(sheet, workbook, entry.getValue(), chartStart + 32, maxPages, gcType, "CPU Usage (%)", BenchmarkResult::cpuUsage);
+
+                    rowIdx = chartStart + 50;
                 }
 
-                // Inserir gráficos abaixo
-                int chartStart = rowIdx + 1;
-                createChart(sheet, workbook, entry.getValue(), chartStart, maxPages, gcType, "Tempo (ms)", BenchmarkResult::elapsed);
-                createChart(sheet, workbook, entry.getValue(), chartStart + 16, maxPages, gcType, "Memória (MB)", BenchmarkResult::memory);
-                createChart(sheet, workbook, entry.getValue(), chartStart + 32, maxPages, gcType, "CPU Usage (%)", BenchmarkResult::cpuUsage);
-
-                rowIdx = chartStart + 50;
-            }
-
-            try (FileOutputStream out = new FileOutputStream("benchmark_summary_gc.xlsx")) {
-                workbook.write(out);
-                System.out.println("Resultados e gráficos salvos em benchmark_summary_gc.xlsx");
+                // Salvar o ficheiro na pasta especificada
+                String outputPath = outputDir + "/benchmark_summary_gc.xlsx";
+                try (FileOutputStream out = new FileOutputStream(outputPath)) {
+                    workbook.write(out);
+                    System.out.println("Resultados e gráficos salvos em " + outputPath);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

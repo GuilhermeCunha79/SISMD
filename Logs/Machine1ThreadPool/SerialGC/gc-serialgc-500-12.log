@@ -1,0 +1,30 @@
+[0.009s][info][gc,init] CardTable entry size: 512
+[0.009s][info][gc     ] Using Serial
+[0.014s][info][gc,init] Version: 21.0.5+9-LTS-239 (release)
+[0.014s][info][gc,init] CPUs: 12 total, 12 available
+[0.014s][info][gc,init] Memory: 16190M
+[0.014s][info][gc,init] Large Page Support: Disabled
+[0.014s][info][gc,init] NUMA Support: Disabled
+[0.014s][info][gc,init] Compressed Oops: Enabled (Zero based)
+[0.014s][info][gc,init] Heap Min Capacity: 2G
+[0.014s][info][gc,init] Heap Initial Capacity: 2G
+[0.014s][info][gc,init] Heap Max Capacity: 4G
+[0.014s][info][gc,init] Pre-touch: Disabled
+[0.022s][info][gc,metaspace] CDS archive(s) mapped at: [0x0000016200000000-0x0000016200c90000-0x0000016200c90000), size 13172736, SharedBaseAddress: 0x0000016200000000, ArchiveRelocationMode: 1.
+[0.023s][info][gc,metaspace] Compressed class space mapped at: 0x0000016201000000-0x0000016241000000, reserved size: 1073741824
+[0.023s][info][gc,metaspace] Narrow klass base: 0x0000016200000000, Narrow klass shift: 0, Narrow klass range: 0x100000000
+[0.757s][info][gc,start    ] GC(0) Pause Young (Allocation Failure)
+[0.820s][info][gc,heap     ] GC(0) DefNew: 559232K(629120K)->20034K(629120K) Eden: 559232K(559232K)->0K(559232K) From: 0K(69888K)->20034K(69888K)
+[0.820s][info][gc,heap     ] GC(0) Tenured: 0K(1398144K)->0K(1398144K)
+[0.820s][info][gc,metaspace] GC(0) Metaspace: 1722K(1856K)->1722K(1856K) NonClass: 1579K(1664K)->1579K(1664K) Class: 142K(192K)->142K(192K)
+[0.820s][info][gc          ] GC(0) Pause Young (Allocation Failure) 546M->19M(1979M) 63.775ms
+[0.821s][info][gc,cpu      ] GC(0) User=0.06s Sys=0.00s Real=0.06s
+[0.979s][info][gc,heap,exit] Heap
+[0.979s][info][gc,heap,exit]  def new generation   total 629120K, used 223263K [0x0000000700000000, 0x000000072aaa0000, 0x0000000755550000)
+[0.979s][info][gc,heap,exit]   eden space 559232K,  36% used [0x0000000700000000, 0x000000070c6774e0, 0x0000000722220000)
+[0.979s][info][gc,heap,exit]   from space 69888K,  28% used [0x0000000726660000, 0x00000007279f0a50, 0x000000072aaa0000)
+[0.979s][info][gc,heap,exit]   to   space 69888K,   0% used [0x0000000722220000, 0x0000000722220000, 0x0000000726660000)
+[0.979s][info][gc,heap,exit]  tenured generation   total 1398144K, used 0K [0x0000000755550000, 0x00000007aaab0000, 0x0000000800000000)
+[0.979s][info][gc,heap,exit]    the space 1398144K,   0% used [0x0000000755550000, 0x0000000755550000, 0x0000000755550200, 0x00000007aaab0000)
+[0.979s][info][gc,heap,exit]  Metaspace       used 1953K, committed 2176K, reserved 1114112K
+[0.979s][info][gc,heap,exit]   class space    used 172K, committed 320K, reserved 1048576K

@@ -8,20 +8,36 @@ import SharedUtilities.*;
 
 public class ForkJoinFrameworkSolution {
 
-
     private static final ConcurrentHashMap<String, AtomicInteger> counts = new ConcurrentHashMap<>();
 
+    public static void main(String[] args) {
+        if (args.length != 3) {
+            System.out.println("Usage: java ForkJoinFrameworkSolution <maxPages> <fileName> <threadNumber>");
+            return;
+        }
+
+        int maxPages = Integer.parseInt(args[0]);
+        String fileName = args[1];
+        int threadNumber = Integer.parseInt(args[2]);
+
+        run(maxPages, fileName, threadNumber);
+    }
+
+    // Método de processamento
     public static void run(int maxPages, String fileName, int threadNumber) {
         long start = System.currentTimeMillis();
 
+        // Criando páginas a partir do arquivo
         Iterable<Page> pages = new Pages(maxPages, fileName);
         List<Page> allPages = new ArrayList<>();
         for (Page p : pages) {
             if (p != null) allPages.add(p);
         }
 
+        // Definindo o limiar para dividir as tarefas
         int threshold = Math.max(10, allPages.size() / (threadNumber * 4));
 
+        // Criando o pool de threads para o ForkJoinFramework
         ForkJoinPool pool = new ForkJoinPool(threadNumber);
         try {
             pool.invoke(new WordCountTask(allPages, 0, allPages.size(), threshold));
@@ -33,12 +49,14 @@ public class ForkJoinFrameworkSolution {
         System.out.println("Processed pages: " + allPages.size());
         System.out.println("Elapsed time: " + (end - start) + "ms");
 
+        // Exibindo as 3 palavras mais frequentes
         counts.entrySet().stream()
                 .sorted((e1, e2) -> Integer.compare(e2.getValue().get(), e1.getValue().get()))
                 .limit(3)
                 .forEach(e -> System.out.println("Word: '" + e.getKey() + "' with total " + e.getValue() + " occurrences!"));
     }
 
+    // Classe para contagem de palavras (subtarefa do ForkJoin)
     static class WordCountTask extends RecursiveAction {
         private final List<Page> pages;
         private final int start, end;

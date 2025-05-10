@@ -1,23 +1,23 @@
 package Benchmark;
 
 import java.io.FileOutputStream;
+
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
-import com.sun.management.OperatingSystemMXBean;
-
 import java.util.*;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
-import SequentialSolution.SequentialSolution;
-import ForkJoinFrameworkSolution.ForkJoinFrameworkSolution;
-import MultithreadedSolutionWithoutThreadPools.MultithreadedSolutionWithoutThreadPools;
-import MultithreadedSolutionWithThreadPools.MultithreadedSolutionWithThreadPools;
 import CompletableFuturesBasedSolution.CompletableFuturesBasedSolution;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xddf.usermodel.XDDFShapeProperties;
-import org.apache.poi.xddf.usermodel.chart.*;
+import ForkJoinFrameworkSolution.ForkJoinFrameworkSolution;
+import MultithreadedSolutionWithThreadPools.MultithreadedSolutionWithThreadPools;
+import MultithreadedSolutionWithoutThreadPools.MultithreadedSolutionWithoutThreadPools;
+import SequentialSolution.SequentialSolution;
+import com.sun.management.OperatingSystemMXBean;
+import org.apache.poi.xddf.usermodel.*;
 import org.apache.poi.xssf.usermodel.*;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xddf.usermodel.chart.*;
 
 public class BenchmarkRunner {
 
@@ -211,6 +211,7 @@ public class BenchmarkRunner {
         }
     }
 
+
     private static <T extends Number> void createChart(XSSFSheet sheet, XSSFWorkbook workbook,
                                                        List<BenchmarkResult> data, int anchorRow,
                                                        int maxPages, String metricName,
@@ -218,65 +219,51 @@ public class BenchmarkRunner {
         XSSFDrawing drawing = sheet.createDrawingPatriarch();
         XSSFClientAnchor anchor = drawing.createAnchor(0, 0, 0, 0, 0, anchorRow, 10, anchorRow + 15);
         XSSFChart chart = drawing.createChart(anchor);
-        chart.setTitleText(metricName + " por Implementação - maxPages=" + maxPages);
+        // Separando a execução sequencial dos demais
+        List<String> categories = new ArrayList<>();
+        List<Double> values = new ArrayList<>();
+        Double sequentialValue = null;
+
+        for (BenchmarkResult r : data) {
+            if (r.name().toLowerCase().contains("sequencial")) {
+                sequentialValue = mapper.applyAsDouble(r);
+            } else {
+                categories.add(r.name() + "-T" + r.threads());
+                values.add(mapper.applyAsDouble(r));
+            }
+        }
+
+        // Incluir o valor sequencial no título se disponível
+        String chartTitle = metricName + " por Implementação - maxPages=" + maxPages;
+        if (sequentialValue != null) {
+            // Formatar o valor sequencial com 2 casas decimais
+            String formattedSeqVal = String.format("%.2f", sequentialValue);
+            chartTitle += " (Sequencial: " + formattedSeqVal + ")";
+        }
+        chart.setTitleText(chartTitle);
         chart.setTitleOverlay(false);
 
+        // Eixo X (categorias)
         XDDFCategoryAxis xAxis = chart.createCategoryAxis(org.apache.poi.xddf.usermodel.chart.AxisPosition.BOTTOM);
         xAxis.setTitle("Impl + Threads");
+
+        // Eixo Y (valores)
         XDDFValueAxis yAxis = chart.createValueAxis(org.apache.poi.xddf.usermodel.chart.AxisPosition.LEFT);
         yAxis.setTitle(metricName);
 
-        List<String> categories = new ArrayList<>();
-        List<Double> values = new ArrayList<>();
-        for (BenchmarkResult r : data) {
-            categories.add(r.name() + "-T" + r.threads());
-            values.add(mapper.applyAsDouble(r));
-        }
+        // Definindo as fontes de dados para as categorias e valores (sem sequencial)
+        XDDFCategoryDataSource cat = XDDFDataSourcesFactory.fromArray(categories.toArray(new String[0]));
+        XDDFNumericalDataSource<Double> val = XDDFDataSourcesFactory.fromArray(values.toArray(new Double[0]));
 
-        XDDFCategoryDataSource cat = org.apache.poi.xddf.usermodel.chart.XDDFDataSourcesFactory.fromArray(
-                categories.toArray(new String[0]));
-        XDDFNumericalDataSource<Double> val = org.apache.poi.xddf.usermodel.chart.XDDFDataSourcesFactory.fromArray(
-                values.toArray(new Double[0]));
+        // Criando o gráfico de colunas (barras verticais)
+        XDDFBarChartData columnData = (XDDFBarChartData) chart.createData(ChartTypes.BAR, xAxis, yAxis);
+        // Configura a direção como vertical (VERTICAL = barras para cima)
+        columnData.setBarDirection(BarDirection.COL);
+        XDDFChartData.Series columnSeries = columnData.addSeries(cat, val);
+        columnSeries.setTitle(metricName, null);
+        chart.plot(columnData);
 
-        XDDFChartData chartData = chart.createData(
-                ChartTypes.BAR, xAxis, yAxis);
-
-        if (chartData instanceof XDDFBarChartData) {
-            ((XDDFBarChartData) chartData).setBarDirection(org.apache.poi.xddf.usermodel.chart.BarDirection.COL);
-        }
-
-        yAxis.setCrossBetween(org.apache.poi.xddf.usermodel.chart.AxisCrossBetween.BETWEEN);
-
-        // Calcular valores máximos e mínimos para ajustar a escala do eixo Y
-        double maxValue = values.stream().mapToDouble(Double::doubleValue).max().orElse(1000.0);
-        double minValue = values.stream().mapToDouble(Double::doubleValue).min().orElse(0.0);
-
-        yAxis.setMinimum(minValue);  // Ajuste o valor mínimo
-        yAxis.setMaximum(maxValue * 1.1);  // Ajuste o valor máximo para dar margem ao gráfico
-
-        // Ajuste do intervalo de unidades principais no eixo Y
-        double yAxisRange = maxValue - minValue;
-        double majorUnit = yAxisRange / 10;  // Divida o intervalo por 10 para obter um espaçamento mais preciso
-        yAxis.setMajorUnit(majorUnit);
-
-        // Ajustando o estilo da grade principal para maior precisão
-        XDDFShapeProperties majorGridProperties = yAxis.getOrAddMajorGridProperties();
-        if (majorGridProperties != null && majorGridProperties.getLineProperties() != null) {
-            majorGridProperties.getLineProperties().setWidth(0.5);
-        }
-
-        XDDFChartData.Series series = chartData.addSeries(cat, val);
-        series.setTitle(metricName, null);
-        chart.plot(chartData);
-
-        // Ajuste a altura da linha onde o gráfico foi ancorado
-        Row row = sheet.getRow(anchorRow);
-        if (row == null) {
-            row = sheet.createRow(anchorRow); // Crie a linha se ela não existir
-        }
-        row.setHeightInPoints(300); // Defina a altura da linha para o gráfico
     }
-
 
     public record BenchmarkResult(String name, int maxPages, int threads, double elapsed, double memory, long gcCount, long gcTime, double cpuUsage) {}
 }

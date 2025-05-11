@@ -24,7 +24,7 @@ import org.apache.poi.xddf.usermodel.chart.*;
 public class BenchmarkRunner {
 
     public static void main(String[] args) {
-        String fileName = "WikiDumps/enwiki-20250420-pages-meta-current1.xml-p1p41242";
+        String fileName = "WikiDumps/enwiki100pages.xml";
 
         int[] maxPagesArray = {500, 5000, 10000, 25000}; //adicionar consoante necessário. TODO: Verificar que intervalo de amostras colocar
         int[] threadCounts = {2, 4, 8, 12, 16}; //TODO: Verificar se se deve adicionar mais valores
@@ -61,7 +61,8 @@ public class BenchmarkRunner {
         System.gc();
         long memBefore     = runtime.totalMemory() - runtime.freeMemory();
         long timeBefore    = System.nanoTime();
-        double cpuBefore   = osBean.getProcessCpuLoad();
+        long cpuTimeBefore = osBean.getProcessCpuTime();
+        long wallClockTimeBefore = System.nanoTime();
 
         // Executa a implementação escolhida
         switch (choice) {
@@ -79,11 +80,16 @@ public class BenchmarkRunner {
         long memAfter = runtime.totalMemory() - runtime.freeMemory();
         long gcCountAfter = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionCount).sum();
         long gcTimeAfter  = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionTime).sum();
-        double cpuAfter   = osBean.getProcessCpuLoad();
+
+        long cpuTimeAfter = osBean.getProcessCpuTime();
+        long wallClockTimeAfter = System.nanoTime();
+
+        long cpuTimeUsed = cpuTimeAfter - cpuTimeBefore;
+        long wallClockElapsed = wallClockTimeAfter - wallClockTimeBefore;
 
         double elapsedMs = (timeAfter - timeBefore) / 1_000_000.0;
         double memoryMb  = (memAfter - memBefore) / (1024.0 * 1024.0);
-        double cpuUsagePct = (cpuAfter - cpuBefore) * 100;
+        double cpuUsagePct = ((double) cpuTimeUsed / (wallClockElapsed * threadNumber)) * 100.0;
 
         return new BenchmarkResult(
                 getImplName(choice), maxPages, threadNumber,

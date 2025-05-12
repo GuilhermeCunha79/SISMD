@@ -1,0 +1,12 @@
+“Eu, Guilherme Pacheco da Cunha, estudante n.º 1201506, do curso Mestrado em Engenharia Informática - Engenharia de Software,
+da Instituto Superior de Engenharia do Porto,declaro que não fiz plágio nem auto plágio, pelo que o trabalho intitulado
+“Optimizing Large-Scale Data Processing on Multicore Systems” é original e da minha
+autoria, não tendo sido usado previamente para qualquer outro fim. Mais declaro que todas as
+fontes usadas estão citadas, no texto e na bibliografia final, segundo as regras de referenciação
+adotadas na Instituição”.
+
+“Eu, …, estudante n.º …, do curso …, da Escola/Instituto …,
+declaro que não fiz plágio nem auto plágio, pelo que o trabalho intitulado “…” é original e da minha
+autoria, não tendo sido usado previamente para qualquer outro fim. Mais declaro que todas as
+fontes usadas estão citadas, no texto e na bibliografia final, segundo as regras de referenciação
+adotadas na Instituição”.

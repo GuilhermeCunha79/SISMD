@@ -24,29 +24,24 @@ import org.apache.poi.xddf.usermodel.chart.*;
 public class BenchmarkRunner {
 
     public static void main(String[] args) {
-        String fileName = "WikiDumps/enwiki100pages.xml";
+        String fileName = "WikiDumps/enwiki-20250420-pages-meta-current1.xml-p1p41242";
 
-        int[] maxPagesArray = {500, 5000, 10000, 25000}; //adicionar consoante necessário. TODO: Verificar que intervalo de amostras colocar
-        int[] threadCounts = {2, 4, 8, 12, 16}; //TODO: Verificar se se deve adicionar mais valores
+        int[] maxPagesArray = {500, 5000, 10000, 25000};
+        int[] threadCounts = {2, 4, 8, 12, 16};
 
         List<BenchmarkResult> allResults = new ArrayList<>();
 
         try {
             for (int maxPages : maxPagesArray) {
-                for (int choice = 1; choice <= 5; choice++) {
-                    if (choice == 1) {
-                        allResults.add(runBenchmark(choice, maxPages, fileName, 1));
-                    } else {
-                        for (int threadNum : threadCounts) {
-                            allResults.add(runBenchmark(choice, maxPages, fileName, threadNum));
-                        }
-                    }
+                allResults.add(runBenchmark(1, maxPages, fileName, 1));
+
+                for (int threadNum : threadCounts) {
+                    allResults.add(runBenchmark(2, maxPages, fileName, threadNum));
                 }
             }
-
             saveResultsToExcel(allResults);
-
-        } catch (Exception e) {
+        } catch (
+                Exception e) {
             e.printStackTrace();
         }
     }
@@ -57,10 +52,10 @@ public class BenchmarkRunner {
         OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
 
         long gcCountBefore = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionCount).sum();
-        long gcTimeBefore  = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionTime).sum();
+        long gcTimeBefore = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionTime).sum();
         System.gc();
-        long memBefore     = runtime.totalMemory() - runtime.freeMemory();
-        long timeBefore    = System.nanoTime();
+        long memBefore = runtime.totalMemory() - runtime.freeMemory();
+        long timeBefore = System.nanoTime();
         long cpuTimeBefore = osBean.getProcessCpuTime();
         long wallClockTimeBefore = System.nanoTime();
 
@@ -79,8 +74,7 @@ public class BenchmarkRunner {
         Thread.sleep(100);
         long memAfter = runtime.totalMemory() - runtime.freeMemory();
         long gcCountAfter = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionCount).sum();
-        long gcTimeAfter  = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionTime).sum();
-
+        long gcTimeAfter = gcBeans.stream().mapToLong(GarbageCollectorMXBean::getCollectionTime).sum();
         long cpuTimeAfter = osBean.getProcessCpuTime();
         long wallClockTimeAfter = System.nanoTime();
 
@@ -91,12 +85,13 @@ public class BenchmarkRunner {
         double memoryMb  = (memAfter - memBefore) / (1024.0 * 1024.0);
         double cpuUsagePct = ((double) cpuTimeUsed / (wallClockElapsed * threadNumber)) * 100.0;
 
+
         return new BenchmarkResult(
                 getImplName(choice), maxPages, threadNumber,
                 Math.round(elapsedMs * 100.0) / 100.0,
-                Math.round(memoryMb * 100.0)   / 100.0,
+                Math.round(memoryMb * 100.0) / 100.0,
                 gcCountAfter - gcCountBefore,
-                gcTimeAfter  - gcTimeBefore,
+                gcTimeAfter - gcTimeBefore,
                 Math.round(cpuUsagePct * 100.0) / 100.0
         );
     }
@@ -200,7 +195,6 @@ public class BenchmarkRunner {
     }
 
 
-
     private static <T extends Number> void createChart(XSSFSheet sheet, XSSFWorkbook workbook,
                                                        List<BenchmarkResult> data, int anchorRow,
                                                        int maxPages, String metricName,
@@ -254,5 +248,7 @@ public class BenchmarkRunner {
 
     }
 
-    public record BenchmarkResult(String name, int maxPages, int threads, double elapsed, double memory, long gcCount, long gcTime, double cpuUsage) {}
+    public record BenchmarkResult(String name, int maxPages, int threads, double elapsed, double memory, long gcCount,
+                                  long gcTime, double cpuUsage) {
+    }
 }

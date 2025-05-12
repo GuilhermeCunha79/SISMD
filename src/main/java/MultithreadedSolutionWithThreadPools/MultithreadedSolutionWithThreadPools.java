@@ -40,16 +40,24 @@ public class MultithreadedSolutionWithThreadPools {
     ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
     Iterable<Page> pages = new Pages(maxPages, fileName);
 
-    // Submitting pages to be processed in parallel
+    List<Page> chunk = new ArrayList<>();
+    int chunkSize = 500;
+
     for (Page page : pages) {
       if (page == null) break;
-      executor.submit(() -> processPage(page)); // Send each page to a thread.
+      chunk.add(page);
+
+      if (chunk.size() == chunkSize) {
+        List<Page> chunkToProcess = new ArrayList<>(chunk);
+        executor.submit(() -> processChunk(chunkToProcess));
+        chunk.clear();
+      }
     }
 
-    // By sending each page to a thread, we have the following scenarios:
-    // - The page is small and therefore will free up the thread for the next page.
-    // - The page is big and might take a while to free up the thread.
-    // We could potentially partition in page chunks.
+    // Submit the remaining chunk if not empty
+    if (!chunk.isEmpty()) {
+      executor.submit(() -> processChunk(chunk));
+    }
 
     // Gracefully shutdown the executor, waiting for all tasks to complete
     executor.shutdown();
@@ -72,14 +80,13 @@ public class MultithreadedSolutionWithThreadPools {
     commonWords.forEach((word, count) -> System.out.println("Word: '" + word + "' with total " + count + " occurrences!"));
   }
 
-  // Process a page by counting the words, using ConcurrentHashMap<String, AtomicInteger>.
-  private static void processPage(Page page) {
-    Iterable<String> words = new Words(page.getText());
-    for (String word : words) {
-      // Only count valid words (length > 1 or specific single letters)
-      if (word.length() > 1 || word.equals("a") || word.equals("I")) {
-        // Count the word using atomic operation to ensure thread safety
-        counts.computeIfAbsent(word, k -> new AtomicInteger(0)).incrementAndGet();
+  private static void processChunk(List<Page> chunk) {
+    for (Page page : chunk) {
+      Iterable<String> words = new Words(page.getText());
+      for (String word : words) {
+        if (word.length() > 1 || word.equals("a") || word.equals("I")) {
+          counts.computeIfAbsent(word, k -> new AtomicInteger(0)).incrementAndGet();
+        }
       }
     }
   }

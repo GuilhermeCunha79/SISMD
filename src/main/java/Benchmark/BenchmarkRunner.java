@@ -26,22 +26,25 @@ public class BenchmarkRunner {
     public static void main(String[] args) {
         String fileName = "WikiDumps/enwiki-20250420-pages-meta-current1.xml-p1p41242";
 
-        int[] maxPagesArray = {500, 5000, 10000, 25000};
+        int[] maxPagesArray = {1000, 10000, 25000, 50000};
         int[] threadCounts = {2, 4, 8, 12, 16};
 
         List<BenchmarkResult> allResults = new ArrayList<>();
 
         try {
             for (int maxPages : maxPagesArray) {
-                allResults.add(runBenchmark(1, maxPages, fileName, 1));
-
-                for (int threadNum : threadCounts) {
-                    allResults.add(runBenchmark(2, maxPages, fileName, threadNum));
+                for (int choice = 1; choice <= 5; choice++) {
+                    if (choice == 1) {
+                        allResults.add(runBenchmark(choice, maxPages, fileName, 1));
+                    } else {
+                        for (int threadNum : threadCounts) {
+                            allResults.add(runBenchmark(choice, maxPages, fileName, threadNum));
+                        }
+                    }
                 }
             }
             saveResultsToExcel(allResults);
-        } catch (
-                Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -193,7 +196,6 @@ public class BenchmarkRunner {
             e.printStackTrace();
         }
     }
-
 
     private static <T extends Number> void createChart(XSSFSheet sheet, XSSFWorkbook workbook,
                                                        List<BenchmarkResult> data, int anchorRow,

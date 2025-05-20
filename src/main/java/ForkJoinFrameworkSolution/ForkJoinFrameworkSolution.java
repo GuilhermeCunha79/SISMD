@@ -23,21 +23,21 @@ public class ForkJoinFrameworkSolution {
         run(maxPages, fileName, threadNumber);
     }
 
-    // Método de processamento
+    //Main processing method
     public static void run(int maxPages, String fileName, int threadNumber) {
         long start = System.currentTimeMillis();
 
-        // Criando páginas a partir do arquivo
+        //Load pages from file
         Iterable<Page> pages = new Pages(maxPages, fileName);
         List<Page> allPages = new ArrayList<>();
         for (Page p : pages) {
             if (p != null) allPages.add(p);
         }
 
-        // Definindo o limiar para dividir as tarefas
+        //Define the threshold for task splitting
         int threshold = Math.max(10, allPages.size() / (threadNumber * 4));
 
-        // Criando o pool de threads para o ForkJoinFramework
+        //Create the ForkJoinPool with the specified number of threads
         ForkJoinPool pool = new ForkJoinPool(threadNumber);
         try {
             pool.invoke(new WordCountTask(allPages, 0, allPages.size(), threshold));
@@ -49,14 +49,14 @@ public class ForkJoinFrameworkSolution {
         System.out.println("Processed pages: " + allPages.size());
         System.out.println("Elapsed time: " + (end - start) + "ms");
 
-        // Exibindo as 3 palavras mais frequentes
+        // Display the top 3 most frequent words
         counts.entrySet().stream()
                 .sorted((e1, e2) -> Integer.compare(e2.getValue().get(), e1.getValue().get()))
                 .limit(3)
                 .forEach(e -> System.out.println("Word: '" + e.getKey() + "' with total " + e.getValue() + " occurrences!"));
     }
 
-    // Classe para contagem de palavras (subtarefa do ForkJoin)
+    // Recursive task for word counting
     static class WordCountTask extends RecursiveAction {
         private final List<Page> pages;
         private final int start, end;
@@ -73,6 +73,7 @@ public class ForkJoinFrameworkSolution {
         protected void compute() {
             int length = end - start;
             if (length <= threshold) {
+                //Process sequentially if below threshold
                 for (int i = start; i < end; i++) {
                     Page page = pages.get(i);
                     if (page != null) {
@@ -84,6 +85,7 @@ public class ForkJoinFrameworkSolution {
                     }
                 }
             } else {
+                //Split the task and process in parallel
                 int mid = start + length / 2;
                 invokeAll(
                         new WordCountTask(pages, start, mid, threshold),
@@ -93,10 +95,12 @@ public class ForkJoinFrameworkSolution {
         }
     }
 
+    //Validates a word
     private static boolean isValidWord(String word) {
         return word.length() > 1 || word.equals("a") || word.equals("I");
     }
 
+    //Increments the word count in the concurrent map
     private static void countWord(String word) {
         counts.computeIfAbsent(word, k -> new AtomicInteger(0)).incrementAndGet();
     }

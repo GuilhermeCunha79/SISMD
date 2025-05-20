@@ -6,7 +6,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MultithreadedSolutionWithoutThreadPools {
-  // Uso de ConcurrentHashMap e AtomicInteger para garantir que os dados são atualizados de forma atômica e sem problemas de concorrência
+  //Use ConcurrentHashMap and AtomicInteger to ensure atomic updates and avoid concurrency issues
   private static final ConcurrentHashMap<String, AtomicInteger> counts = new ConcurrentHashMap<>();
 
   public static void main(String[] args) {
@@ -24,7 +24,7 @@ public class MultithreadedSolutionWithoutThreadPools {
     } catch (NumberFormatException e) {
       System.err.println("Invalid number format for maxPages or threadNumber. They must be integers.");
     } catch (InterruptedException e) {
-      System.err.println("A execução foi interrompida: " + e.getMessage());
+      System.err.println("Execution was interrupted: " + e.getMessage());
       e.printStackTrace();
     }
   }
@@ -32,17 +32,17 @@ public class MultithreadedSolutionWithoutThreadPools {
   public static void run(int maxPages, String fileName, int threadNumber) throws InterruptedException {
     long start = System.currentTimeMillis();
 
-    // Carrega as páginas
+    //Load pages from the file
     Iterable<Page> pages = new Pages(maxPages, fileName);
     List<Page> allPages = new ArrayList<>();
     for (Page p : pages) {
       if (p != null) allPages.add(p);
     }
 
-    // Divide páginas em partes para processar em paralelo
+    //Split pages into chunks for parallel processing
     List<List<Page>> pageChunks = splitPages(allPages, threadNumber);
 
-    // Processa páginas em paralelo
+    //Process pages in parallel using individual threads
     List<Thread> threads = new ArrayList<>();
     for (List<Page> chunk : pageChunks) {
       Thread thread = new Thread(() -> processPages(chunk));
@@ -50,7 +50,7 @@ public class MultithreadedSolutionWithoutThreadPools {
       thread.start();
     }
 
-    // Espera todas as threads terminarem
+    //Wait for all threads to finish
     for (Thread thread : threads) {
       thread.join();
     }
@@ -59,14 +59,14 @@ public class MultithreadedSolutionWithoutThreadPools {
     System.out.println("Processed pages: " + allPages.size());
     System.out.println("Elapsed time: " + (end - start) + "ms");
 
-    // Exibe as 3 palavras mais frequentes
+    //Display the top 3 most frequent words
     counts.entrySet().stream()
             .sorted((entry1, entry2) -> Integer.compare(entry2.getValue().get(), entry1.getValue().get()))
             .limit(3)
             .forEach(entry -> System.out.println("Word: '" + entry.getKey() + "' with total " + entry.getValue() + " occurrences!"));
   }
 
-  // Divide as páginas em partes para processar em paralelo
+  //Split the list of pages into chunks for each thread
   private static List<List<Page>> splitPages(List<Page> allPages, int numChunks) {
     List<List<Page>> chunks = new ArrayList<>();
     int totalPages = allPages.size();
@@ -83,7 +83,7 @@ public class MultithreadedSolutionWithoutThreadPools {
     return chunks;
   }
 
-  // Processa as páginas e conta as palavras
+  //Process the list of pages and count valid words
   private static void processPages(List<Page> pages) {
     for (Page page : pages) {
       if (page != null) {
@@ -96,12 +96,12 @@ public class MultithreadedSolutionWithoutThreadPools {
     }
   }
 
-  // Verifica se a palavra é válida para contar
+  //Check if the word is valid to be counted
   private static boolean isValidWord(String word) {
     return word.length() > 1 || word.equals("a") || word.equals("I");
   }
 
-  // Conta a palavra, atualizando de forma atômica a variável counts
+  //Increment word count atomically in the shared map
   private static void countWord(String word) {
     counts.computeIfAbsent(word, k -> new AtomicInteger(0)).incrementAndGet();
   }
